@@ -1,0 +1,39 @@
+<div class="page">
+  <app-page-header titulo="Transporte" descripcion="Historial de despachos hacia las zonas afectadas, del más reciente al más antiguo." />
+
+  <div class="row" role="group" aria-label="Filtrar por estado">
+    <button type="button" class="btn btn--ghost" [attr.aria-pressed]="filtro() === ''" (click)="filtro.set('')">Todos</button>
+    @for (e of estados; track e) {
+      <button type="button" class="btn btn--ghost" [attr.aria-pressed]="filtro() === e" (click)="filtro.set(e)">{{ e }}</button>
+    }
+  </div>
+
+  <ol class="stack">
+    @for (d of despachos(); track d.id) {
+      <li class="card" [id]="d.id" [class.card--target]="seleccionado() === d.id">
+        <div class="card__head">
+          <div>
+            <h2>{{ d.codigo }} · {{ d.carga }}</h2>
+            <p class="meta">{{ d.cantidad | number }} {{ d.unidad }}</p>
+          </div>
+          <app-badge [tone]="toneEstado(d.estado)">{{ d.estado }}</app-badge>
+        </div>
+        <ul class="meta-list">
+          <li><strong>Origen:</strong> <a [routerLink]="['/acopio']" [fragment]="d.origenId">{{ nombreAcopio(d.origenId) }}</a></li>
+          <li><strong>Destino:</strong> <a [routerLink]="['/zonas']" [fragment]="d.destinoId">{{ zona(d.destinoId) }}</a></li>
+          <li><strong>Vehículo:</strong> {{ d.vehiculo }} ({{ d.placa }})</li>
+          <li><strong>Conductor:</strong> {{ d.conductor }}</li>
+          <li><strong>Salida:</strong> {{ d.salida | date: 'd MMM, h:mm a' }}</li>
+          @if (d.llegada) { <li><strong>Llegada:</strong> {{ d.llegada | date: 'd MMM, h:mm a' }}</li> }
+        </ul>
+        <ol class="steps" aria-label="Progreso del despacho">
+          @for (e of estados; track e) {
+            <li [class.done]="alcanzado(d.estado, e)">{{ e }}</li>
+          }
+        </ol>
+      </li>
+    } @empty {
+      <li class="notice notice--info">No hay despachos con ese estado.</li>
+    }
+  </ol>
+</div>

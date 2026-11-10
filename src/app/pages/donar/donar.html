@@ -1,0 +1,99 @@
+<div class="page">
+  <app-page-header titulo="Donar" descripcion="Elige cómo ayudar y dónde entregar tu aporte. Cada donación recibe un código para darle seguimiento." />
+
+  <section class="grid grid--3" aria-label="Formas de ayudar">
+    <article class="card stack">
+      <h2>Insumos</h2>
+      <p class="meta">Agua potable, alimentos no perecederos, kits de higiene, colchonetas, cobijas e insumos médicos sellados. Entrégalos en un punto de acopio con cupo.</p>
+    </article>
+    <article class="card stack">
+      <h2>Dinero</h2>
+      <p class="meta">Los aportes económicos se destinan a compra de insumos y transporte. Regístrate y te contactaremos con los datos de la cuenta oficial.</p>
+    </article>
+    <article class="card stack">
+      <h2>Voluntariado</h2>
+      <p class="meta">Clasificación de insumos, apoyo logístico y conducción. Indica tu disponibilidad en el formulario.</p>
+    </article>
+  </section>
+
+  <div class="grid grid--2">
+    <section class="card stack" aria-labelledby="h-form">
+      <h2 id="h-form">Registrar mi aporte</h2>
+
+      @if (confirmado(); as c) {
+        <p class="notice" role="status">
+          ¡Gracias, {{ c.nombre }}! Tu código de seguimiento es <strong>{{ c.codigo }}</strong>.
+          Entrega tu aporte en {{ nombreAcopio(c.acopioId) }}.
+        </p>
+      }
+
+      <form [formRoot]="f" class="form-grid">
+        <div class="field">
+          <label for="d-nombre">Nombre completo</label>
+          <input id="d-nombre" class="input" type="text" autocomplete="name" [formField]="f.nombre" [attr.aria-describedby]="f.nombre().touched() && f.nombre().invalid() ? 'e-nombre' : null" />
+          @if (f.nombre().touched() && f.nombre().invalid()) { <p class="error" id="e-nombre">{{ f.nombre().errors()[0].message }}</p> }
+        </div>
+
+        <div class="field">
+          <label for="d-correo">Correo electrónico</label>
+          <input id="d-correo" class="input" type="email" autocomplete="email" [formField]="f.correo" [attr.aria-describedby]="f.correo().touched() && f.correo().invalid() ? 'e-correo' : null" />
+          @if (f.correo().touched() && f.correo().invalid()) { <p class="error" id="e-correo">{{ f.correo().errors()[0].message }}</p> }
+        </div>
+
+        <div class="field">
+          <label for="d-tipo">Tipo de aporte</label>
+          <select id="d-tipo" class="input" [formField]="f.tipo">
+            @for (t of tipos; track t) { <option [value]="t">{{ t }}</option> }
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="d-acopio">Punto de acopio</label>
+          <select id="d-acopio" class="input" [formField]="f.acopioId" [attr.aria-describedby]="f.acopioId().touched() && f.acopioId().invalid() ? 'e-acopio' : null">
+            <option value="">Selecciona un punto…</option>
+            @for (a of acopios(); track a.id) { <option [value]="a.id">{{ a.nombre }} ({{ a.municipio }})</option> }
+          </select>
+          @if (f.acopioId().touched() && f.acopioId().invalid()) { <p class="error" id="e-acopio">{{ f.acopioId().errors()[0].message }}</p> }
+        </div>
+
+        <div class="field full">
+          <label for="d-detalle">Detalle del aporte (qué y cuánto)</label>
+          <textarea id="d-detalle" class="input" [formField]="f.detalle" [attr.aria-describedby]="f.detalle().touched() && f.detalle().invalid() ? 'e-detalle' : null"></textarea>
+          @if (f.detalle().touched() && f.detalle().invalid()) { <p class="error" id="e-detalle">{{ f.detalle().errors()[0].message }}</p> }
+        </div>
+
+        <div class="full"><button class="btn" type="submit">Registrar aporte</button></div>
+      </form>
+    </section>
+
+    <section class="card stack" aria-labelledby="h-donde">
+      <h2 id="h-donde">¿Dónde puedo donar?</h2>
+      <ul class="list">
+        @for (a of acopios(); track a.id) {
+          <li class="list__item">
+            <span class="row row--between">
+              <span class="list__title">{{ a.nombre }}</span>
+              <app-badge [tone]="toneDisponibilidad(a.disponibilidad)">{{ a.disponibilidad }}</app-badge>
+            </span>
+            <span class="meta">{{ a.municipio }} · {{ a.horario }}</span>
+            <a class="link" routerLink="/acopio" [fragment]="a.id">Ver zona de acopio</a>
+          </li>
+        }
+      </ul>
+    </section>
+  </div>
+
+  @if (aportes().length) {
+    <section class="card stack" aria-labelledby="h-mis">
+      <h2 id="h-mis">Aportes registrados en esta sesión</h2>
+      <ul class="list">
+        @for (a of aportes(); track a.codigo) {
+          <li class="list__item">
+            <span class="list__title">{{ a.codigo }} · {{ a.tipo }}</span>
+            <span class="meta">{{ nombreAcopio(a.acopioId) }} · {{ a.fecha | date: 'd MMM, h:mm a' }}</span>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+</div>

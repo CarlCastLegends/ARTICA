@@ -1,0 +1,25 @@
+:host { display: block; }
+.skip { position: absolute; left: 0.5rem; top: -4rem; z-index: 100; padding: 0.6rem 1rem; background: var(--navy); color: #fff; border-radius: 0.5rem; }
+.skip:focus { top: 0.5rem; }
+.topbar { position: sticky; top: 0; z-index: 40; background: var(--surface); border-bottom: 1px solid var(--line); box-shadow: 0 1px 2px rgb(15 23 42 / 0.05); }
+.topbar__inner { max-width: 80rem; margin: 0 auto; padding: 0.5rem 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.brand { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; color: var(--navy-dark); min-width: 0; }
+.brand img { border-radius: 0.6rem; flex: none; }
+.brand__name { font-weight: 800; font-size: 1.15rem; letter-spacing: 0.04em; display: block; line-height: 1.1; }
+.brand__tag { font-size: 0.75rem; color: var(--muted); display: block; }
+.alert { display: none; align-items: center; gap: 0.5rem; padding: 0.3rem 0.8rem; border-radius: 999px; background: var(--media-bg); color: var(--media-fg); font-size: 0.78rem; font-weight: 600; }
+.alert__dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: #b45309; animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.35; } }
+.layout { max-width: 80rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; display: grid; gap: 1.5rem; }
+.nav { padding: 0.5rem; }
+.nav ul { display: flex; gap: 0.25rem; overflow-x: auto; }
+.nav a { display: flex; align-items: center; gap: 0.7rem; padding: 0.65rem 0.9rem; border-radius: 0.75rem; text-decoration: none; color: #334155; font-weight: 500; font-size: 0.9rem; white-space: nowrap; }
+.nav a:hover { background: #f1f5f9; }
+.nav a.active { background: var(--teal-soft); color: #064e52; font-weight: 700; }
+.footer { margin-top: 2rem; font-size: 0.8rem; color: var(--muted); }
+@media (min-width: 48rem) {
+  .alert { display: inline-flex; }
+  .layout { grid-template-columns: 15.5rem minmax(0, 1fr); align-items: start; }
+  .nav { position: sticky; top: 5.5rem; }
+  .nav ul { flex-direction: column; overflow: visible; }
+}
