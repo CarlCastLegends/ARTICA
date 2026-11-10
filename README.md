@@ -1,5 +1,5 @@
 # Artica
-<img src="src/img/logo.jpeg" alt="Logo del proyecto" width="300">
+<img src="src/img/logo.jpg" alt="Logo del proyecto" width="300">
 
 A web system for the, logistics traceability of donations and distributed humanitarian aid to contingencies and regional social in Venezuela is presented. The proposal is fundamental in initiatives of digital humanitarian response platform and social management to the national context, inspired by models in the models and background of SOS Yummy and the work of Arenas E.R with Donavenezuela.com. An environmentally-applied approach is based on the laudable Scrum methodology, a fragmented and modular development by components. The architecture of the system is with Coruña as Angular for the frontend and Visual Studio Code, complete the development cycle in less in a month. The application of a web platform to carry out the real-time tracking of collection centers (available inventory and personal areas), conditions and the logistics of input transport. For the integration of Map APIs (Google Maps / OpenStreetMap), the personar platform geo-reference the origin, route on the way and destination destination of the Congresses, master the traceability and the importance of donations.
 
