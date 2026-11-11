@@ -1,8 +1,4 @@
 import { RenderMode, ServerRoute } from '@angular/ssr';
 
-export const serverRoutes: ServerRoute[] = [
-  {
-    path: '**',
-    renderMode: RenderMode.Prerender
-  }
-];
+/** Los datos vienen de la API en el navegador, así que las páginas se renderizan en el cliente. */
+export const serverRoutes: ServerRoute[] = [{ path: '**', renderMode: RenderMode.Client }];

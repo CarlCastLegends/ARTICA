@@ -13,7 +13,9 @@
 .layout { max-width: 80rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; display: grid; gap: 1.5rem; }
 .nav { padding: 0.5rem; }
 .nav ul { display: flex; gap: 0.25rem; overflow-x: auto; }
-.nav a { display: flex; align-items: center; gap: 0.7rem; padding: 0.65rem 0.9rem; border-radius: 0.75rem; text-decoration: none; color: #334155; font-weight: 500; font-size: 0.9rem; white-space: nowrap; }
+.nav a { white-space: nowrap; }
+.nav a { display: flex; align-items: center; gap: 0.7rem; padding: 0.65rem 0.9rem; border-radius: 0.75rem; text-decoration: none; color: #334155; font-weight: 500; font-size: 0.9rem; line-height: 1.25; }
+.nav a app-icon { align-self: flex-start; margin-top: 0.1rem; }
 .nav a:hover { background: #f1f5f9; }
 .nav a.active { background: var(--teal-soft); color: #064e52; font-weight: 700; }
 .footer { margin-top: 2rem; font-size: 0.8rem; color: var(--muted); }
@@ -22,4 +24,5 @@
   .layout { grid-template-columns: 15.5rem minmax(0, 1fr); align-items: start; }
   .nav { position: sticky; top: 5.5rem; }
   .nav ul { flex-direction: column; overflow: visible; }
+  .nav a { white-space: normal; }
 }

@@ -116,3 +116,21 @@ textarea.input { min-height: 5.5rem; resize: vertical; }
 .steps .done { background: var(--teal); color: #fff; font-weight: 600; }
 
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* Fotos y formularios con varias opciones */
+.card--foto { display: grid; gap: 0.9rem; align-content: start; }
+.checks { border: 1px solid var(--line); border-radius: 0.75rem; padding: 0.75rem 0.9rem; display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; margin: 0; min-width: 0; }
+.checks legend { font-size: 0.8rem; font-weight: 600; color: #334155; padding: 0 0.3rem; }
+.check { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.875rem; cursor: pointer; }
+.btn:disabled { opacity: 0.6; cursor: progress; }
+code { background: #f1f5f9; padding: 0.05rem 0.3rem; border-radius: 0.3rem; font-size: 0.85em; }
+
+/* Marcadores del mapa (Leaflet) */
+.leaflet-container { font-family: inherit; }
+.leaflet-marker-icon.pin { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff; color: #fff; box-shadow: 0 1px 4px rgb(15 23 42 / 0.45); }
+.pin--afe { background: #b4233c; }
+.pin--aco { background: var(--navy); }
+.pin--ent { background: #92400e; }
+.leaflet-container a.btn { color: #fff; }
+.leaflet-popup-content .btn { color: #fff; }
+.notice--error { background: var(--alta-bg); color: var(--alta-fg); display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }

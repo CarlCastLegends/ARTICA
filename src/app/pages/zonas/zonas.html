@@ -1,42 +1,102 @@
 <div class="page">
   <app-page-header titulo="Zonas afectadas" descripcion="Zonas con emergencia activa, de la más reciente a la más antigua, con su magnitud, tipo de desastre y prioridad de atención." />
 
-  <div class="card form-grid" role="group" aria-label="Filtros">
+  <div class="row row--between">
+    <p class="meta" role="status">{{ zonas().length }} zonas mostradas</p>
+    <button type="button" class="btn" [attr.aria-expanded]="mostrarForm()" aria-controls="form-zona" (click)="mostrarForm.set(!mostrarForm())">
+      {{ mostrarForm() ? 'Cerrar formulario' : 'Reportar zona afectada' }}
+    </button>
+  </div>
+
+  @if (exito()) { <p class="notice" role="status">{{ exito() }}</p> }
+
+  @if (mostrarForm()) {
+    <section class="card stack" id="form-zona" aria-labelledby="h-form-zona">
+      <h2 id="h-form-zona">Reportar zona afectada</h2>
+      <form [formRoot]="f" class="form-grid">
+        <div class="field">
+          <label for="z-titulo">Título</label>
+          <input id="z-titulo" class="input" type="text" [formField]="f.titulo" [attr.aria-describedby]="f.titulo().touched() && f.titulo().invalid() ? 'ez-titulo' : null" />
+          @if (f.titulo().touched() && f.titulo().invalid()) { <p class="error" id="ez-titulo">{{ f.titulo().errors()[0].message }}</p> }
+        </div>
+        <div class="field">
+          <label for="z-zona">Zona o sector</label>
+          <input id="z-zona" class="input" type="text" placeholder="Ej. Petare" [formField]="f.zona" [attr.aria-describedby]="f.zona().touched() && f.zona().invalid() ? 'ez-zona' : null" />
+          @if (f.zona().touched() && f.zona().invalid()) { <p class="error" id="ez-zona">{{ f.zona().errors()[0].message }}</p> }
+        </div>
+        <div class="field">
+          <label for="z-prio">Prioridad</label>
+          <select id="z-prio" class="input" [formField]="f.prioridad">
+            @for (p of prioridades; track p) { <option [value]="p">{{ etiquetaPrioridad(p) }}</option> }
+          </select>
+        </div>
+        <div class="field">
+          <label for="z-pob">Población en riesgo</label>
+          <input id="z-pob" class="input" type="number" inputmode="numeric" [formField]="f.poblacionRiesgo" [attr.aria-describedby]="f.poblacionRiesgo().touched() && f.poblacionRiesgo().invalid() ? 'ez-pob' : null" />
+          @if (f.poblacionRiesgo().touched() && f.poblacionRiesgo().invalid()) { <p class="error" id="ez-pob">{{ f.poblacionRiesgo().errors()[0].message }}</p> }
+        </div>
+        <div class="field">
+          <label for="z-tipo">Tipo de desastre (opcional)</label>
+          <input id="z-tipo" class="input" type="text" list="tipos-desastre" placeholder="Ej. Inundación" [formField]="f.tipoDesastre" />
+          <datalist id="tipos-desastre">
+            @for (t of ['Sismo', 'Inundación', 'Deslizamiento', 'Derrumbe', 'Sequía', 'Incendio']; track t) { <option [value]="t"></option> }
+          </datalist>
+        </div>
+        <div class="field">
+          <label for="z-mag">Magnitud (opcional)</label>
+          <input id="z-mag" class="input" type="text" placeholder="Ej. Mw 5,9 · agua a 1,4 m" [formField]="f.magnitud" />
+        </div>
+        <div class="field full">
+          <label for="z-enlace">Enlace del mapa (opcional)</label>
+          <input id="z-enlace" class="input" type="url" placeholder="https://…" [formField]="f.enlaceMaps" [attr.aria-describedby]="f.enlaceMaps().touched() && f.enlaceMaps().invalid() ? 'ez-enlace' : null" />
+          @if (f.enlaceMaps().touched() && f.enlaceMaps().invalid()) { <p class="error" id="ez-enlace">{{ f.enlaceMaps().errors()[0].message }}</p> }
+        </div>
+        <div class="full"><app-photo-field [(valor)]="foto" carpeta="afe" /></div>
+        @if (errorEnvio()) { <p class="error full" role="alert">{{ errorEnvio() }}</p> }
+        <div class="full"><button class="btn" type="submit">Registrar zona</button></div>
+      </form>
+    </section>
+  }
+
+  <div class="form-grid card" role="group" aria-label="Filtros">
+    <div class="field">
+      <label for="f-prio">Prioridad</label>
+      <select id="f-prio" class="input" (change)="cambiarPrioridad($event)">
+        <option value="">Todas</option>
+        @for (p of prioridades; track p) { <option [value]="p">{{ etiquetaPrioridad(p) }}</option> }
+      </select>
+    </div>
     <div class="field">
       <label for="f-tipo">Tipo de desastre</label>
       <select id="f-tipo" class="input" (change)="cambiarTipo($event)">
         <option value="">Todos</option>
-        @for (t of tipos; track t) { <option [value]="t">{{ t }}</option> }
-      </select>
-    </div>
-    <div class="field">
-      <label for="f-prioridad">Prioridad</label>
-      <select id="f-prioridad" class="input" (change)="cambiarPrioridad($event)">
-        <option value="">Todas</option>
-        @for (p of prioridades; track p) { <option [value]="p">{{ p }}</option> }
+        @for (t of tipos(); track t) { <option [value]="t">{{ t }}</option> }
       </select>
     </div>
   </div>
 
-  <p class="meta" role="status">{{ zonas().length }} zonas mostradas</p>
-
-  <ol class="stack">
+  <ol class="grid grid--2">
     @for (z of zonas(); track z.id) {
-      <li class="card" [id]="z.id" [class.card--target]="seleccionada() === z.id">
-        <div class="card__head">
-          <div>
-            <h2>{{ z.titulo }}</h2>
-            <p class="meta">{{ z.municipio }} · {{ z.fecha | date: "d 'de' MMMM, h:mm a" }}</p>
+      <li class="card card--foto" [id]="'afe-' + z.id" [class.card--target]="seleccionada() === 'afe-' + z.id">
+        <app-foto-editable tabla="afe" [id]="z.id" [foto]="z.foto" [alt]="'Foto de ' + z.titulo" />
+        <div class="stack">
+          <div class="card__head">
+            <div>
+              <h2>{{ z.titulo }}</h2>
+              <p class="meta">{{ z.zona }} · {{ z.fechaReporte | date: "d 'de' MMMM, h:mm a" }}</p>
+            </div>
+            <app-badge [tone]="tonePrioridad(z.prioridad)">Prioridad {{ etiquetaPrioridad(z.prioridad) }}</app-badge>
           </div>
-          <app-badge [tone]="tonePrioridad(z.prioridad)">Prioridad {{ z.prioridad }}</app-badge>
+          <ul class="meta-list">
+            <li><strong>Tipo:</strong> {{ z.tipoDesastre ?? 'Sin especificar' }}</li>
+            <li><strong>Magnitud:</strong> {{ z.magnitud ?? 'Sin especificar' }}</li>
+            <li><strong>Población en riesgo:</strong> {{ z.poblacionRiesgo ?? 0 | number }}</li>
+          </ul>
+          <p class="row">
+            <a class="link" routerLink="/seguimiento" [fragment]="'afe-' + z.id">Ver en el mapa</a>
+            <a class="link" [href]="z.enlaceMaps" target="_blank" rel="noopener noreferrer">Abrir enlace <span class="sr-only">(se abre en una pestaña nueva)</span></a>
+          </p>
         </div>
-        <p>{{ z.descripcion }}</p>
-        <ul class="meta-list">
-          <li><strong>Tipo:</strong> {{ z.tipo }}</li>
-          <li><strong>Magnitud:</strong> {{ z.magnitud }}</li>
-          <li><strong>Población en riesgo:</strong> {{ z.poblacionRiesgo | number }}</li>
-        </ul>
-        <p><a class="link" routerLink="/seguimiento" [fragment]="z.id">Ver en el mapa</a></p>
       </li>
     } @empty {
       <li class="notice notice--info">No hay zonas que coincidan con los filtros.</li>

@@ -1,35 +1,42 @@
+export interface Coordenadas {
+  readonly lat: number;
+  readonly lng: number;
+}
+
+/** Intenta leer coordenadas de un enlace de mapas (`@lat,lng`, `q=lat,lng` o `mlat/mlon`). */
+export function coordenadasDeEnlace(enlace: string): Coordenadas | null {
+  const patrones = [/@(-?\d{1,2}\.\d+),(-?\d{1,3}\.\d+)/, /[?&](?:q|ll|query)=(-?\d{1,2}\.\d+)(?:,|%2C)(-?\d{1,3}\.\d+)/, /#map=\d+\/(-?\d{1,2}\.\d+)\/(-?\d{1,3}\.\d+)/];
+  for (const re of patrones) {
+    const m = re.exec(enlace);
+    if (m) {
+      const lat = Number(m[1]);
+      const lng = Number(m[2]);
+      if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
+    }
+  }
+  return null;
+}
+
+interface RespuestaNominatim {
+  readonly lat: string;
+  readonly lon: string;
+}
+
 /**
- * Proyección lineal sencilla para el esquema referencial del estado Zulia.
- * No sustituye a un mapa cartográfico: sirve para ubicar puntos de interés.
+ * Geocodifica con la API de búsqueda de OpenStreetMap (Nominatim).
+ * Política de uso: máximo 1 petición por segundo; quien llama debe espaciarlas.
  */
-const LAT_MAX = 11.5;
-const LAT_MIN = 8.7;
-const LNG_MIN = -73.0;
-const LNG_MAX = -70.7;
-
-/** Relación ancho/alto del esquema para que no se deforme. */
-export const MAP_ASPECT = (((LNG_MAX - LNG_MIN) * Math.cos((10 * Math.PI) / 180)) / (LAT_MAX - LAT_MIN)).toFixed(3);
-
-export interface MapPosition {
-  readonly x: number;
-  readonly y: number;
+export async function geocodificar(lugar: string): Promise<Coordenadas | null> {
+  const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=ve&accept-language=es&q=${encodeURIComponent(`${lugar}, Venezuela`)}`;
+  const respuesta = await fetch(url);
+  if (!respuesta.ok) return null;
+  const datos = (await respuesta.json()) as RespuestaNominatim[];
+  if (!datos.length) return null;
+  const lat = Number(datos[0].lat);
+  const lng = Number(datos[0].lon);
+  return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
 }
 
-export function project(lat: number, lng: number): MapPosition {
-  const x = ((lng - LNG_MIN) / (LNG_MAX - LNG_MIN)) * 100;
-  const y = ((LAT_MAX - lat) / (LAT_MAX - LAT_MIN)) * 100;
-  return { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
+export function esperar(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
 }
-
-/** Contorno aproximado del Lago de Maracaibo, como pares [lat, lng]. */
-const LAKE: ReadonlyArray<readonly [number, number]> = [
-  [10.95, -71.7], [10.95, -71.55], [10.75, -71.5], [10.55, -71.42], [10.35, -71.38],
-  [10.15, -71.25], [9.95, -71.2], [9.7, -71.35], [9.45, -71.55], [9.2, -71.75],
-  [9.05, -71.95], [9.15, -72.0], [9.45, -71.85], [9.7, -71.8], [9.95, -71.75],
-  [10.2, -71.75], [10.45, -71.72], [10.62, -71.66], [10.8, -71.68],
-];
-
-export const LAKE_POINTS = LAKE.map(([lat, lng]) => {
-  const p = project(lat, lng);
-  return `${p.x},${p.y}`;
-}).join(' ');

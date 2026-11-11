@@ -1,6 +1,6 @@
 <div class="page">
   <section class="hero" aria-labelledby="titulo-hero">
-    <app-badge>Panel operativo · Zulia</app-badge>
+    <app-badge>Panel operativo</app-badge>
     <h1 id="titulo-hero">Articulación logística y trazabilidad de la ayuda humanitaria</h1>
     <p>
       Resumen de zonas de emergencia, centros de acopio, transporte y personas reportadas para
@@ -8,11 +8,13 @@
     </p>
   </section>
 
+  @if (cargando()) { <p class="notice notice--info" role="status">Cargando datos…</p> }
+
   <section class="grid grid--4" aria-label="Indicadores principales">
-    <app-stat-card etiqueta="Zonas afectadas" [valor]="resumen().zonasActivas" [detalle]="resumen().prioridadAlta + ' con prioridad alta'" icono="alert" />
+    <app-stat-card etiqueta="Zonas afectadas" [valor]="resumen().zonasAfectadas" [detalle]="resumen().prioridadAlta + ' con prioridad alta'" icono="alert" />
     <app-stat-card etiqueta="Población en riesgo" [valor]="(resumen().poblacionRiesgo | number) ?? ''" detalle="Personas en zonas activas" icono="users" />
-    <app-stat-card etiqueta="Acopio con cupo" [valor]="resumen().acopiosDisponibles + ' / ' + acopios().length" detalle="Puntos que reciben donaciones" icono="box" />
-    <app-stat-card etiqueta="En tránsito" [valor]="resumen().enTransito" [detalle]="resumen().entregados + ' despachos entregados'" icono="truck" />
+    <app-stat-card etiqueta="Acopio con insumos" [valor]="resumen().acopiosConInsumos + ' / ' + resumen().acopios" detalle="Puntos con inventario disponible" icono="box" />
+    <app-stat-card etiqueta="En tránsito" [valor]="resumen().enTransito" [detalle]="resumen().entregados + ' entregas completadas'" icono="truck" />
   </section>
 
   <div class="grid grid--2">
@@ -24,14 +26,16 @@
       <ul class="list">
         @for (z of ultimasZonas(); track z.id) {
           <li>
-            <a class="list__item" routerLink="/zonas" [fragment]="z.id">
+            <a class="list__item" routerLink="/zonas" [fragment]="'afe-' + z.id">
               <span class="row row--between">
                 <span class="list__title">{{ z.titulo }}</span>
-                <app-badge [tone]="tonePrioridad(z.prioridad)">{{ z.prioridad }}</app-badge>
+                <app-badge [tone]="tonePrioridad(z.prioridad)">{{ etiquetaPrioridad(z.prioridad) }}</app-badge>
               </span>
-              <span class="meta">{{ z.tipo }} · {{ z.magnitud }} · {{ z.municipio }} · {{ z.fecha | date: 'd MMM, h:mm a' }}</span>
+              <span class="meta">{{ z.tipoDesastre ?? 'Tipo sin especificar' }} · {{ z.zona }} · {{ z.fechaReporte | date: 'd MMM, h:mm a' }}</span>
             </a>
           </li>
+        } @empty {
+          <li class="meta">Aún no hay zonas registradas.</li>
         }
       </ul>
     </section>
@@ -45,13 +49,13 @@
         @for (a of acopios(); track a.id) {
           <li class="list__item">
             <span class="row row--between">
-              <a class="list__title" [routerLink]="['/acopio']" [fragment]="a.id">{{ a.nombre }}</a>
-              <app-badge [tone]="toneDisponibilidad(a.disponibilidad)">{{ a.disponibilidad }}</app-badge>
+              <a class="list__title" routerLink="/acopio" [fragment]="'aco-' + a.id">{{ a.titulo }}</a>
+              <app-badge [tone]="toneCapacidad(a.capacidad)">{{ etiquetaCapacidad(a.capacidad) }}</app-badge>
             </span>
-            <div class="bar" role="progressbar" [attr.aria-label]="'Capacidad usada de ' + a.nombre" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="a.capacidadUsada">
-              <div class="bar__fill" [style.width.%]="a.capacidadUsada"></div>
-            </div>
+            <app-nivel [capacidad]="a.capacidad" />
           </li>
+        } @empty {
+          <li class="meta">Aún no hay zonas de acopio.</li>
         }
       </ul>
     </section>
@@ -62,16 +66,18 @@
         <a class="link" routerLink="/transporte">Ver historial</a>
       </div>
       <ul class="list">
-        @for (d of ultimosDespachos(); track d.id) {
+        @for (e of ultimasEntregas(); track e.id) {
           <li>
-            <a class="list__item" routerLink="/transporte" [fragment]="d.id">
+            <a class="list__item" routerLink="/transporte" [fragment]="'ent-' + e.id">
               <span class="row row--between">
-                <span class="list__title">{{ d.codigo }} · {{ d.carga }}</span>
-                <app-badge [tone]="toneTransporte(d.estado)">{{ d.estado }}</app-badge>
+                <span class="list__title">{{ e.codigo }} · {{ e.cantidad | number }} unidades</span>
+                <app-badge [tone]="toneTransporte(e.estado)">{{ e.estado }}</app-badge>
               </span>
-              <span class="meta">{{ nombreAcopio(d.origenId) }} → {{ nombreZona(d.destinoId) }}</span>
+              <span class="meta">{{ e.origen }} → {{ e.destino }}</span>
             </a>
           </li>
+        } @empty {
+          <li class="meta">Aún no hay despachos.</li>
         }
       </ul>
     </section>
@@ -85,14 +91,14 @@
         <p class="stat"><span class="stat__body"><span class="stat__value">{{ resumen().desaparecidas }}</span><span class="stat__label">Desaparecidas</span></span></p>
         <p class="stat"><span class="stat__body"><span class="stat__value">{{ resumen().encontradas }}</span><span class="stat__label">Encontradas</span></span></p>
       </div>
-      <p class="meta">¿Conoces el paradero de alguien o buscas a un familiar? Registra un reporte.</p>
+      <p class="meta">¿Buscas a un familiar o sabes dónde está alguien? Registra un reporte.</p>
     </section>
   </div>
 
   <section class="card row row--between" aria-labelledby="h-donar">
     <div>
       <h2 id="h-donar">¿Quieres ayudar?</h2>
-      <p class="meta">Consulta qué se necesita y dónde entregar tu donación.</p>
+      <p class="meta">{{ resumen().donaciones }} donaciones registradas. Consulta dónde entregar la tuya.</p>
     </div>
     <a class="btn" routerLink="/donar">Ir a donar</a>
   </section>

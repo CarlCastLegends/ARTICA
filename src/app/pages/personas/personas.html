@@ -1,93 +1,92 @@
 <div class="page">
   <app-page-header titulo="Desaparecidos y encontrados" descripcion="Consulta los reportes de personas desaparecidas o encontradas y registra uno nuevo con sus datos básicos." />
 
-  <div class="grid grid--2">
-    <section class="card stack" aria-labelledby="h-lista">
-      <h2 id="h-lista">Reportes ({{ personas().length }})</h2>
+  <div class="row row--between">
+    <p class="meta" role="status">{{ personas().length }} reportes</p>
+    <button type="button" class="btn" [attr.aria-expanded]="mostrarForm()" aria-controls="form-persona" (click)="mostrarForm.set(!mostrarForm())">
+      {{ mostrarForm() ? 'Cerrar formulario' : 'Hacer un reporte' }}
+    </button>
+  </div>
 
-      <div class="form-grid">
-        <div class="field">
-          <label for="p-buscar">Buscar por nombre o cédula</label>
-          <input id="p-buscar" class="input" type="search" (input)="buscar($event)" />
-        </div>
-        <div class="field">
-          <span class="label" id="p-estado">Estado</span>
-          <div class="row" role="group" aria-labelledby="p-estado">
-            <button type="button" class="btn btn--ghost" [attr.aria-pressed]="filtro() === ''" (click)="filtro.set('')">Todos</button>
-            @for (e of estados; track e) {
-              <button type="button" class="btn btn--ghost" [attr.aria-pressed]="filtro() === e" (click)="filtro.set(e)">{{ e }}s ({{ e === 'Desaparecida' ? resumen().desaparecidas : resumen().encontradas }})</button>
-            }
-          </div>
-        </div>
-      </div>
+  @if (exito()) { <p class="notice" role="status">{{ exito() }}</p> }
+  @if (errorEnvio() && !mostrarForm()) { <p class="error" role="alert">{{ errorEnvio() }}</p> }
 
-      <ul class="list" role="status" aria-live="polite">
-        @for (p of personas(); track p.id) {
-          <li class="list__item">
-            <span class="row row--between">
-              <span class="list__title">{{ p.nombre }}</span>
-              <app-badge [tone]="tone(p.estado)">{{ p.estado }}</app-badge>
-            </span>
-            <span class="meta-list">
-              <span>{{ p.edad }} años</span>
-              <span>CI: {{ p.cedula }}</span>
-              <span>{{ p.municipio }}</span>
-              <span>{{ p.fecha | date: 'd MMM, h:mm a' }}</span>
-            </span>
-            <span class="meta">Contacto: {{ p.contacto }}</span>
-          </li>
-        } @empty {
-          <li class="notice notice--info">No hay reportes que coincidan.</li>
-        }
-      </ul>
-    </section>
-
-    <section class="card stack" aria-labelledby="h-reporte">
+  @if (mostrarForm()) {
+    <section class="card stack" id="form-persona" aria-labelledby="h-reporte">
       <h2 id="h-reporte">Hacer un reporte</h2>
       <p class="meta">Registra solo datos básicos. No publiques información sensible de otras personas.</p>
-
-      @if (enviado(); as msg) { <p class="notice" role="status">{{ msg }}</p> }
-
       <form [formRoot]="f" class="form-grid">
-        <div class="field full">
+        <div class="field">
           <label for="r-estado">Tipo de reporte</label>
           <select id="r-estado" class="input" [formField]="f.estado">
             @for (e of estados; track e) { <option [value]="e">{{ e }}</option> }
           </select>
         </div>
-
-        <div class="field full">
+        <div class="field">
           <label for="r-nombre">Nombre completo</label>
-          <input id="r-nombre" class="input" type="text" [formField]="f.nombre" [attr.aria-describedby]="f.nombre().touched() && f.nombre().invalid() ? 'er-nombre' : null" />
-          @if (f.nombre().touched() && f.nombre().invalid()) { <p class="error" id="er-nombre">{{ f.nombre().errors()[0].message }}</p> }
+          <input id="r-nombre" class="input" type="text" autocomplete="off" [formField]="f.nombreCompleto" [attr.aria-describedby]="f.nombreCompleto().touched() && f.nombreCompleto().invalid() ? 'er-nombre' : null" />
+          @if (f.nombreCompleto().touched() && f.nombreCompleto().invalid()) { <p class="error" id="er-nombre">{{ f.nombreCompleto().errors()[0].message }}</p> }
         </div>
-
         <div class="field">
           <label for="r-edad">Edad</label>
           <input id="r-edad" class="input" type="number" inputmode="numeric" [formField]="f.edad" [attr.aria-describedby]="f.edad().touched() && f.edad().invalid() ? 'er-edad' : null" />
           @if (f.edad().touched() && f.edad().invalid()) { <p class="error" id="er-edad">{{ f.edad().errors()[0].message }}</p> }
         </div>
-
         <div class="field">
           <label for="r-ci">Cédula de identidad</label>
           <input id="r-ci" class="input" type="text" placeholder="V-12.345.678" [formField]="f.cedula" [attr.aria-describedby]="f.cedula().touched() && f.cedula().invalid() ? 'er-ci' : null" />
           @if (f.cedula().touched() && f.cedula().invalid()) { <p class="error" id="er-ci">{{ f.cedula().errors()[0].message }}</p> }
         </div>
-
-        <div class="field">
-          <label for="r-muni">Municipio</label>
-          <input id="r-muni" class="input" type="text" [formField]="f.municipio" [attr.aria-describedby]="f.municipio().touched() && f.municipio().invalid() ? 'er-muni' : null" />
-          @if (f.municipio().touched() && f.municipio().invalid()) { <p class="error" id="er-muni">{{ f.municipio().errors()[0].message }}</p> }
+        <div class="field full">
+          <label for="r-zona">Zona afectada relacionada (opcional)</label>
+          <select id="r-zona" class="input" [formField]="f.idZona">
+            <option value="">Sin zona</option>
+            @for (z of afectados(); track z.id) { <option [value]="'' + z.id">{{ z.titulo }} ({{ z.zona }})</option> }
+          </select>
         </div>
-
-        <div class="field">
-          <label for="r-tel">Teléfono de contacto</label>
-          <input id="r-tel" class="input" type="tel" autocomplete="tel" [formField]="f.contacto" [attr.aria-describedby]="f.contacto().touched() && f.contacto().invalid() ? 'er-tel' : null" />
-          @if (f.contacto().touched() && f.contacto().invalid()) { <p class="error" id="er-tel">{{ f.contacto().errors()[0].message }}</p> }
-        </div>
-
+        <div class="full"><app-photo-field [(valor)]="foto" carpeta="reg" /></div>
+        @if (errorEnvio()) { <p class="error full" role="alert">{{ errorEnvio() }}</p> }
         <div class="full"><button class="btn" type="submit">Enviar reporte</button></div>
       </form>
     </section>
+  }
+
+  <div class="card form-grid">
+    <div class="field">
+      <label for="p-buscar">Buscar por nombre o cédula</label>
+      <input id="p-buscar" class="input" type="search" (input)="buscar($event)" />
+    </div>
+    <div class="field">
+      <span class="label" id="p-estado">Estado</span>
+      <div class="row" role="group" aria-labelledby="p-estado">
+        <button type="button" class="btn btn--ghost" [attr.aria-pressed]="filtro() === ''" (click)="filtro.set('')">Todos</button>
+        @for (e of estados; track e) {
+          <button type="button" class="btn btn--ghost" [attr.aria-pressed]="filtro() === e" (click)="filtro.set(e)">{{ e }}s ({{ e === 'Desaparecida' ? resumen().desaparecidas : resumen().encontradas }})</button>
+        }
+      </div>
+    </div>
   </div>
+
+  <ul class="grid grid--3">
+    @for (p of personas(); track p.id) {
+      <li class="card stack" [id]="'reg-' + p.id" [class.card--target]="seleccionada() === 'reg-' + p.id">
+        <app-foto-editable tabla="reg" [id]="p.id" [foto]="p.foto" [alt]="'Foto de ' + p.nombreCompleto" />
+        <div class="card__head">
+          <h2>{{ p.nombreCompleto }}</h2>
+          <app-badge [tone]="p.estado === 'Encontrada' ? 'baja' : 'alta'">{{ p.estado }}</app-badge>
+        </div>
+        <ul class="meta-list">
+          <li><strong>Edad:</strong> {{ p.edad ?? 'No indicada' }}</li>
+          <li><strong>CI:</strong> {{ p.cedula }}</li>
+          @if (p.zonaTitulo) { <li><strong>Zona:</strong> {{ p.zonaTitulo }}</li> }
+          <li>{{ p.fechaReporte | date: 'd MMM, h:mm a' }}</li>
+        </ul>
+        @if (p.estado === 'Desaparecida') {
+          <p><button type="button" class="btn btn--ghost" [disabled]="ocupado() === p.id" (click)="encontrada(p.id)">Marcar como encontrada</button></p>
+        }
+      </li>
+    } @empty {
+      <li class="notice notice--info">No hay reportes que coincidan.</li>
+    }
+  </ul>
 </div>

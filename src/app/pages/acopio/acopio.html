@@ -1,54 +1,95 @@
 <div class="page">
   <app-page-header titulo="Zonas de acopio" descripcion="Lugares, instituciones y ONG que reciben donaciones, con su inventario y disponibilidad." />
 
+  <div class="row row--between">
+    <p class="meta" role="status">{{ acopios().length }} puntos de acopio</p>
+    <button type="button" class="btn" [attr.aria-expanded]="mostrarForm()" aria-controls="form-acopio" (click)="mostrarForm.set(!mostrarForm())">
+      {{ mostrarForm() ? 'Cerrar formulario' : 'Registrar zona de acopio' }}
+    </button>
+  </div>
+
+  @if (exito()) { <p class="notice" role="status">{{ exito() }}</p> }
+
+  @if (mostrarForm()) {
+    <section class="card stack" id="form-acopio" aria-labelledby="h-form-acopio">
+      <h2 id="h-form-acopio">Registrar zona de acopio</h2>
+      <form [formRoot]="f" class="form-grid">
+        <div class="field">
+          <label for="a-titulo">Nombre del acopio</label>
+          <input id="a-titulo" class="input" type="text" [formField]="f.titulo" [attr.aria-describedby]="f.titulo().touched() && f.titulo().invalid() ? 'ea-titulo' : null" />
+          @if (f.titulo().touched() && f.titulo().invalid()) { <p class="error" id="ea-titulo">{{ f.titulo().errors()[0].message }}</p> }
+        </div>
+        <div class="field">
+          <label for="a-zona">Zona o sector</label>
+          <input id="a-zona" class="input" type="text" placeholder="Ej. Catia" [formField]="f.zona" [attr.aria-describedby]="f.zona().touched() && f.zona().invalid() ? 'ea-zona' : null" />
+          @if (f.zona().touched() && f.zona().invalid()) { <p class="error" id="ea-zona">{{ f.zona().errors()[0].message }}</p> }
+        </div>
+        <div class="field">
+          <label for="a-cap">Nivel de inventario</label>
+          <select id="a-cap" class="input" [formField]="f.capacidad">
+            @for (c of capacidades; track c) { <option [value]="c">{{ etiquetaCapacidad(c) }}</option> }
+          </select>
+        </div>
+        <div class="field">
+          <label for="a-inv">Inventario principal (opcional)</label>
+          <select id="a-inv" class="input" [formField]="f.idInventario">
+            <option value="">Sin inventario asignado</option>
+            @for (i of inventario(); track i.id) { <option [value]="'' + i.id">{{ i.nombre }} ({{ i.tipo }})</option> }
+          </select>
+        </div>
+        <fieldset class="full checks">
+          <legend>Recursos que recibe</legend>
+          @for (r of recursosDisponibles(); track r) {
+            <label class="check"><input type="checkbox" [checked]="recursos().includes(r)" (change)="alternarRecurso(r, $event)" /> {{ r }}</label>
+          }
+        </fieldset>
+        <div class="field full">
+          <label for="a-enlace">Enlace del mapa (opcional)</label>
+          <input id="a-enlace" class="input" type="url" placeholder="https://…" [formField]="f.enlaceMaps" [attr.aria-describedby]="f.enlaceMaps().touched() && f.enlaceMaps().invalid() ? 'ea-enlace' : null" />
+          @if (f.enlaceMaps().touched() && f.enlaceMaps().invalid()) { <p class="error" id="ea-enlace">{{ f.enlaceMaps().errors()[0].message }}</p> }
+        </div>
+        <div class="full"><app-photo-field [(valor)]="foto" carpeta="aco" /></div>
+        @if (errorEnvio()) { <p class="error full" role="alert">{{ errorEnvio() }}</p> }
+        <div class="full"><button class="btn" type="submit">Registrar acopio</button></div>
+      </form>
+    </section>
+  }
+
   <ul class="grid grid--2">
     @for (a of acopios(); track a.id) {
-      <li class="card stack" [id]="a.id" [class.card--target]="seleccionado() === a.id">
-        <div class="card__head">
-          <div>
-            <h2>{{ a.nombre }}</h2>
-            <p class="meta">{{ a.tipo }} · {{ a.municipio }}</p>
+      <li class="card card--foto" [id]="'aco-' + a.id" [class.card--target]="seleccionado() === 'aco-' + a.id">
+        <app-foto-editable tabla="aco" [id]="a.id" [foto]="a.foto" [alt]="'Foto de ' + a.titulo" />
+        <div class="stack">
+          <div class="card__head">
+            <div>
+              <h2>{{ a.titulo }}</h2>
+              <p class="meta">{{ a.zona }}@if (a.responsable) { · Responsable: {{ a.responsable }} }</p>
+            </div>
+            <app-badge [tone]="toneCapacidad(a.capacidad)">{{ etiquetaCapacidad(a.capacidad) }}</app-badge>
           </div>
-          <app-badge [tone]="toneDisponibilidad(a.disponibilidad)">{{ a.disponibilidad }}</app-badge>
-        </div>
+          <app-nivel [capacidad]="a.capacidad" />
 
-        <ul class="meta-list">
-          <li><strong>Responsable:</strong> {{ a.responsable }}</li>
-          <li><strong>Horario:</strong> {{ a.horario }}</li>
-        </ul>
-
-        <div class="stack">
-          <span class="label">Capacidad usada: {{ a.capacidadUsada }} %</span>
-          <div class="bar" role="progressbar" [attr.aria-label]="'Capacidad usada de ' + a.nombre" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="a.capacidadUsada">
-            <div class="bar__fill" [class.bar__fill--alta]="a.capacidadUsada >= 95" [class.bar__fill--media]="a.capacidadUsada >= 80 && a.capacidadUsada < 95" [style.width.%]="a.capacidadUsada"></div>
+          <div class="stack">
+            <span class="label">Recibe</span>
+            <ul class="chips">
+              @for (r of a.recursosComunes; track r) { <li class="chip">{{ r }}</li> } @empty { <li class="meta">Sin recursos indicados</li> }
+            </ul>
           </div>
-        </div>
 
-        <div class="stack">
-          <span class="label">Recibe</span>
-          <ul class="chips">
-            @for (r of a.recibe; track r) { <li class="chip">{{ r }}</li> }
-          </ul>
-        </div>
+          <p class="meta">
+            <strong>Inventario:</strong>
+            @if (a.inventarioNombre) { {{ a.inventarioNombre }}: {{ a.inventarioCantidad ?? 0 | number }} } @else { sin inventario asignado }
+          </p>
 
-        <div class="stack">
-          <span class="label">Inventario</span>
-          <ul class="meta-list">
-            @for (i of a.inventario; track i.nombre) {
-              <li>{{ i.nombre }}: <strong>{{ i.cantidad | number }}</strong> {{ i.unidad }}</li>
-            }
-          </ul>
-        </div>
-
-        <p class="row">
-          @if (a.disponibilidad !== 'Lleno') {
+          <p class="row">
             <a class="btn" routerLink="/donar" [queryParams]="{ acopio: a.id }">Donar aquí</a>
-          } @else {
-            <span class="meta">Este punto no recibe donaciones por ahora.</span>
-          }
-          <a class="btn btn--ghost" routerLink="/seguimiento" [fragment]="a.id">Ver en el mapa</a>
-        </p>
+            <a class="btn btn--ghost" routerLink="/seguimiento" [fragment]="'aco-' + a.id">Ver en el mapa</a>
+            <a class="link" [href]="a.enlaceMaps" target="_blank" rel="noopener noreferrer">Abrir enlace <span class="sr-only">(se abre en una pestaña nueva)</span></a>
+          </p>
+        </div>
       </li>
+    } @empty {
+      <li class="notice notice--info">Aún no hay zonas de acopio registradas.</li>
     }
   </ul>
 </div>

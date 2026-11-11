@@ -1,10 +1,9 @@
 import { registerLocaleData } from '@angular/common';
 import localeEsVe from '@angular/common/locales/es-VE';
 import { ApplicationConfig, LOCALE_ID, provideBrowserGlobalErrorListeners } from '@angular/core';
-import { provideClientHydration } from '@angular/platform-browser';
+import { provideHttpClient, withFetch } from '@angular/common/http';
 import { provideRouter, withComponentInputBinding, withInMemoryScrolling } from '@angular/router';
 import { routes } from './app.routes';
-import { provideHttpClient } from '@angular/common/http';
 
 registerLocaleData(localeEsVe);
 
@@ -16,7 +15,7 @@ export const appConfig: ApplicationConfig = {
       withComponentInputBinding(),
       withInMemoryScrolling({ anchorScrolling: 'enabled', scrollPositionRestoration: 'enabled' }),
     ),
-    provideClientHydration(),
+    provideHttpClient(withFetch()),
     { provide: LOCALE_ID, useValue: 'es-VE' },
-    provideHttpClient(),  ],
+  ],
 };

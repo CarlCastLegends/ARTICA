@@ -1,56 +1,38 @@
-import {
-  AngularNodeAppEngine,
-  createNodeRequestHandler,
-  isMainModule,
-  writeResponseToNodeResponse,
-} from '@angular/ssr/node';
+import { AngularNodeAppEngine, createNodeRequestHandler, isMainModule, writeResponseToNodeResponse } from '@angular/ssr/node';
 import express from 'express';
 import { join } from 'node:path';
+import { IMG_DIR, api } from './api/api';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
-
 const app = express();
 const angularApp = new AngularNodeAppEngine();
 
-/**
- * Example Express Rest API endpoints can be defined here.
- * Uncomment and define endpoints as necessary.
- *
- * Example:
- * ```ts
- * app.get('/api/{*splat}', (req, res) => {
- *   // Handle API request
- * });
- * ```
- */
+/** API REST (PostgreSQL). */
+app.use('/api', api);
 
-/**
- * Serve static files from /browser
- */
+/** Fotos subidas: /img/reg (registrados), /img/afe (afectados), /img/aco (acopios). */
 app.use(
-  express.static(browserDistFolder, {
-    maxAge: '1y',
+  '/img',
+  express.static(IMG_DIR, {
+    maxAge: '1h',
+    fallthrough: false,
     index: false,
-    redirect: false,
+    setHeaders: (res) => res.setHeader('X-Content-Type-Options', 'nosniff'),
   }),
 );
 
-/**
- * Handle all other requests by rendering the Angular application.
- */
+/** Archivos estáticos de la aplicación (JS, CSS, logo…). */
+app.use(express.static(browserDistFolder, { maxAge: '1y', index: false, redirect: false }));
+
+/** La aplicación se renderiza en el navegador (RenderMode.Client): Angular entrega el index. */
 app.use((req, res, next) => {
   angularApp
     .handle(req)
-    .then((response) =>
-      response ? writeResponseToNodeResponse(response, res) : next(),
-    )
+    .then((response) => (response ? writeResponseToNodeResponse(response, res) : next()))
     .catch(next);
 });
 
-/**
- * Start the server if this module is the main entry point, or it is ran via PM2.
- * The server listens on the port defined by the `PORT` environment variable, or defaults to 4000.
- */
+/** Arranca el servidor si este módulo es el punto de entrada (o se ejecuta con PM2). */
 if (isMainModule(import.meta.url) || process.env['pm_id']) {
   const port = process.env['PORT'] || 4000;
   app.listen(port, (error) => {
@@ -58,11 +40,9 @@ if (isMainModule(import.meta.url) || process.env['pm_id']) {
       throw error;
     }
 
-    console.log(`Node Express server listening on http://localhost:${port}`);
+    console.log(`Servidor ARTICA en http://localhost:${port}`);
   });
 }
 
-/**
- * Request handler used by the Angular CLI (for dev-server and during build) or Firebase Cloud Functions.
- */
+/** Manejador usado por Angular CLI (servidor de desarrollo y compilación). */
 export const reqHandler = createNodeRequestHandler(app);

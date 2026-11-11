@@ -1,5 +1,5 @@
 <div class="page">
-  <app-page-header titulo="Seguimiento y trazado" descripcion="Mapa de puntos de interés: zonas de acopio, zonas afectadas y transporte en ruta. Cada punto te lleva a su sección." />
+  <app-page-header titulo="Seguimiento y trazado" descripcion="Mapa de OpenStreetMap con zonas de acopio, zonas afectadas y transporte en ruta. Cada punto te lleva a su sección." />
 
   <div class="row" role="group" aria-label="Filtrar puntos del mapa">
     <button type="button" class="btn btn--ghost" [attr.aria-pressed]="filtro() === ''" (click)="filtro.set('')">Todos</button>
@@ -8,39 +8,23 @@
     }
   </div>
 
-  <div class="mapa-layout">
-    <div class="mapa" [style.aspect-ratio]="aspecto" role="group" aria-label="Esquema referencial del estado Zulia">
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-        <rect width="100" height="100" fill="#eef5f4" />
-        <path d="M0 20H100M0 40H100M0 60H100M0 80H100M20 0V100M40 0V100M60 0V100M80 0V100" stroke="#d5e4e2" stroke-width="0.3" />
-        <polygon [attr.points]="lago" fill="#cfe6f5" stroke="#9cc6e6" stroke-width="0.4" />
-      </svg>
-      <span class="mapa__rotulo mapa__rotulo--lago" aria-hidden="true">Lago de Maracaibo</span>
-      <span class="mapa__rotulo mapa__rotulo--nota" aria-hidden="true">Esquema referencial</span>
+  @if (ubicando() > 0) {
+    <p class="notice notice--info" role="status">Ubicando {{ ubicando() }} zonas con OpenStreetMap… las coordenadas se guardan para la próxima vez.</p>
+  }
+  @if (sinUbicar().length) {
+    <p class="notice notice--info" role="status">No se pudo ubicar: {{ sinUbicar().join(', ') }}. Agrega un enlace de mapa con coordenadas a esos registros.</p>
+  }
+  @if (errorMapa()) { <p class="error" role="alert">{{ errorMapa() }}</p> }
 
-      @for (p of visibles(); track p.id) {
-        <a
-          class="pin"
-          [class]="'pin pin--' + p.tipo"
-          [class.pin--activo]="seleccionado() === p.id"
-          [routerLink]="p.ruta"
-          [fragment]="p.id"
-          [style.left.%]="p.x"
-          [style.top.%]="p.y"
-          [attr.aria-label]="etiqueta(p.tipo) + ': ' + p.nombre"
-        >
-          <app-icon [name]="icono(p.tipo)" />
-          <span class="pin__tip">{{ p.nombre }}</span>
-        </a>
-      }
-    </div>
+  <div class="mapa-layout">
+    <div class="mapa" #mapa role="region" aria-label="Mapa interactivo de OpenStreetMap"></div>
 
     <section class="card" aria-labelledby="h-leyenda">
       <h2 id="h-leyenda">Puntos de interés ({{ visibles().length }})</h2>
       <ul class="list leyenda">
-        @for (p of visibles(); track p.id) {
-          <li [id]="p.id">
-            <a class="list__item" [class.card--target]="seleccionado() === p.id" [routerLink]="p.ruta" [fragment]="p.id">
+        @for (p of visibles(); track p.clave) {
+          <li>
+            <a class="list__item" [class.card--target]="seleccionado() === p.clave" [routerLink]="ruta(p.tipo)" [fragment]="p.clave">
               <span class="row">
                 <span [class]="'dot dot--' + p.tipo" aria-hidden="true"></span>
                 <span class="list__title">{{ p.nombre }}</span>
@@ -48,6 +32,8 @@
               <span class="meta">{{ etiqueta(p.tipo) }} · {{ p.detalle }}</span>
             </a>
           </li>
+        } @empty {
+          <li class="meta">No hay puntos con ubicación todavía.</li>
         }
       </ul>
     </section>

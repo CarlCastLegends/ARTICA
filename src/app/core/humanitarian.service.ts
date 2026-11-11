@@ -1,84 +1,151 @@
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Service, computed, inject, signal } from '@angular/core';
-import { Aporte, Despacho, EstadoPersona, ReportePersona, TipoAporte, ZonaAcopio, ZonaAfectada } from './models';
-import { DESPACHOS, REPORTES_PERSONAS, ZONAS_ACOPIO, ZONAS_AFECTADAS } from './seed-data';
-import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+import { Acopio, Afectado, Catalogos, Donador, Entrega, EstadoTransporte, Registrado, TablaFoto } from './models';
 
-export interface NuevoAporte {
-  nombre: string;
-  correo: string;
-  tipo: TipoAporte;
-  acopioId: string;
-  detalle: string;
-}
-
-export interface NuevoReporte {
-  nombre: string;
-  edad: number;
-  cedula: string;
-  estado: EstadoPersona;
-  municipio: string;
-  contacto: string;
+export function mensajeError(err: unknown): string {
+  if (err instanceof HttpErrorResponse) {
+    const cuerpo = err.error as { error?: unknown } | null;
+    if (cuerpo && typeof cuerpo.error === 'string') return cuerpo.error;
+    if (err.status === 0) return 'No hay conexión con el servidor.';
+  }
+  return 'Ocurrió un error inesperado. Inténtalo de nuevo.';
 }
 
 @Service()
 export class HumanitarianService {
-  private readonly _zonas = signal<readonly ZonaAfectada[]>(ZONAS_AFECTADAS);
-  private readonly _acopios = signal<readonly ZonaAcopio[]>(ZONAS_ACOPIO);
-  private readonly _despachos = signal<readonly Despacho[]>(DESPACHOS);
-  private readonly _personas = signal<readonly ReportePersona[]>(REPORTES_PERSONAS);
-  private readonly _aportes = signal<readonly Aporte[]>([]);
+  private readonly http = inject(HttpClient);
 
-  /** Más reciente primero. */
-  readonly zonas = computed(() => [...this._zonas()].sort((a, b) => b.fecha.localeCompare(a.fecha)));
+  private readonly _afectados = signal<readonly Afectado[]>([]);
+  private readonly _acopios = signal<readonly Acopio[]>([]);
+  private readonly _entregas = signal<readonly Entrega[]>([]);
+  private readonly _registrados = signal<readonly Registrado[]>([]);
+  private readonly _donadores = signal<readonly Donador[]>([]);
+  private readonly _catalogos = signal<Catalogos | null>(null);
+
+  readonly afectados = this._afectados.asReadonly();
   readonly acopios = this._acopios.asReadonly();
-  readonly despachos = computed(() => [...this._despachos()].sort((a, b) => b.salida.localeCompare(a.salida)));
-  readonly personas = computed(() => [...this._personas()].sort((a, b) => b.fecha.localeCompare(a.fecha)));
-  readonly aportes = this._aportes.asReadonly();
+  readonly entregas = this._entregas.asReadonly();
+  readonly registrados = this._registrados.asReadonly();
+  readonly donadores = this._donadores.asReadonly();
+  readonly catalogos = this._catalogos.asReadonly();
 
-  private readonly zonaIndex = computed(() => new Map(this._zonas().map((z) => [z.id, z])));
+  readonly cargando = signal(false);
+  readonly error = signal<string | null>(null);
+
+  private readonly afectadoIndex = computed(() => new Map(this._afectados().map((a) => [a.id, a])));
   private readonly acopioIndex = computed(() => new Map(this._acopios().map((a) => [a.id, a])));
 
   readonly resumen = computed(() => {
-    const zonas = this._zonas();
-    const despachos = this._despachos();
-    const personas = this._personas();
+    const afectados = this._afectados();
+    const entregas = this._entregas();
+    const personas = this._registrados();
     return {
-      zonasActivas: zonas.length,
-      prioridadAlta: zonas.filter((z) => z.prioridad === 'Alta').length,
-      poblacionRiesgo: zonas.reduce((t, z) => t + z.poblacionRiesgo, 0),
-      acopiosDisponibles: this._acopios().filter((a) => a.disponibilidad !== 'Lleno').length,
-      enTransito: despachos.filter((d) => d.estado === 'En tránsito').length,
-      entregados: despachos.filter((d) => d.estado === 'Entregado').length,
+      zonasAfectadas: afectados.length,
+      prioridadAlta: afectados.filter((a) => a.prioridad === 'alto').length,
+      poblacionRiesgo: afectados.reduce((t, a) => t + (a.poblacionRiesgo ?? 0), 0),
+      acopios: this._acopios().length,
+      acopiosConInsumos: this._acopios().filter((a) => a.capacidad !== 'sin insumos').length,
+      enTransito: entregas.filter((e) => e.estado === 'En tránsito').length,
+      entregados: entregas.filter((e) => e.estado === 'Entregado').length,
       desaparecidas: personas.filter((p) => p.estado === 'Desaparecida').length,
       encontradas: personas.filter((p) => p.estado === 'Encontrada').length,
+      donaciones: this._donadores().length,
     };
   });
 
-  zonaPorId(id: string): ZonaAfectada | undefined {
-    return this.zonaIndex().get(id);
+  afectadoPorId(id: number | null): Afectado | undefined {
+    return id === null ? undefined : this.afectadoIndex().get(id);
   }
 
-  acopioPorId(id: string): ZonaAcopio | undefined {
-    return this.acopioIndex().get(id);
+  acopioPorId(id: number | null): Acopio | undefined {
+    return id === null ? undefined : this.acopioIndex().get(id);
   }
 
-  registrarAporte(datos: NuevoAporte): Aporte {
-    const aporte: Aporte = {
-      ...datos,
-      codigo: `DON-${1001 + this._aportes().length}`,
-      fecha: new Date().toISOString(),
-    };
-    this._aportes.update((lista) => [aporte, ...lista]);
-    return aporte;
+  async cargarTodo(): Promise<void> {
+    this.cargando.set(true);
+    this.error.set(null);
+    try {
+      const [afectados, acopios, entregas, registrados, donadores, catalogos] = await Promise.all([
+        this.get<Afectado[]>('/api/afectados'),
+        this.get<Acopio[]>('/api/acopios'),
+        this.get<Entrega[]>('/api/entregas'),
+        this.get<Registrado[]>('/api/registrados'),
+        this.get<Donador[]>('/api/donadores'),
+        this.get<Catalogos>('/api/catalogos'),
+      ]);
+      this._afectados.set(afectados);
+      this._acopios.set(acopios);
+      this._entregas.set(entregas);
+      this._registrados.set(registrados);
+      this._donadores.set(donadores);
+      this._catalogos.set(catalogos);
+    } catch (err) {
+      this.error.set(`${mensajeError(err)} Revisa que la API y la base de datos estén en marcha.`);
+    } finally {
+      this.cargando.set(false);
+    }
   }
 
-  registrarPersona(datos: NuevoReporte): ReportePersona {
-    const reporte: ReportePersona = {
-      ...datos,
-      id: `p${this._personas().length + 1}`,
-      fecha: new Date().toISOString(),
-    };
-    this._personas.update((lista) => [reporte, ...lista]);
-    return reporte;
+  async crearAfectado(datos: FormData): Promise<Afectado> {
+    const nuevo = await firstValueFrom(this.http.post<Afectado>('/api/afectados', datos));
+    this._afectados.update((l) => [nuevo, ...l]);
+    return nuevo;
+  }
+
+  async crearAcopio(datos: FormData): Promise<Acopio> {
+    const nuevo = await firstValueFrom(this.http.post<Acopio>('/api/acopios', datos));
+    this._acopios.update((l) => [...l, nuevo]);
+    return nuevo;
+  }
+
+  async crearRegistrado(datos: FormData): Promise<Registrado> {
+    const nuevo = await firstValueFrom(this.http.post<Registrado>('/api/registrados', datos));
+    this._registrados.update((l) => [nuevo, ...l]);
+    return nuevo;
+  }
+
+  async marcarEncontrado(id: number): Promise<void> {
+    const r = await firstValueFrom(this.http.patch<Registrado>(`/api/registrados/${id}/encontrado`, {}));
+    this._registrados.update((l) => l.map((p) => (p.id === id ? r : p)));
+  }
+
+  async crearEntrega(datos: object): Promise<Entrega> {
+    const nueva = await firstValueFrom(this.http.post<Entrega>('/api/entregas', datos));
+    this._entregas.update((l) => [nueva, ...l]);
+    return nueva;
+  }
+
+  async cambiarEstado(id: number, estado: EstadoTransporte): Promise<void> {
+    const r = await firstValueFrom(this.http.patch<Entrega>(`/api/entregas/${id}/estado`, { estado }));
+    this._entregas.update((l) => l.map((e) => (e.id === id ? r : e)));
+  }
+
+  async crearDonador(datos: object): Promise<{ id: number; codigo: string }> {
+    const r = await firstValueFrom(this.http.post<{ id: number; codigo: string }>('/api/donadores', datos));
+    this._donadores.set(await this.get<Donador[]>('/api/donadores'));
+    return r;
+  }
+
+  async crearVoluntario(datos: object): Promise<void> {
+    await firstValueFrom(this.http.post('/api/voluntarios', datos));
+  }
+
+  async cambiarFoto(tabla: TablaFoto, id: number, datos: FormData): Promise<string> {
+    const { foto } = await firstValueFrom(this.http.patch<{ foto: string }>(`/api/foto/${tabla}/${id}`, datos));
+    if (tabla === 'afe') this._afectados.update((l) => l.map((a) => (a.id === id ? { ...a, foto } : a)));
+    else if (tabla === 'aco') this._acopios.update((l) => l.map((a) => (a.id === id ? { ...a, foto } : a)));
+    else this._registrados.update((l) => l.map((r) => (r.id === id ? { ...r, foto } : r)));
+    return foto;
+  }
+
+  async guardarUbicacion(tabla: 'afe' | 'aco', id: number, lat: number, lng: number): Promise<void> {
+    await firstValueFrom(this.http.patch(`/api/ubicacion/${tabla}/${id}`, { lat, lng }));
+    if (tabla === 'afe') this._afectados.update((l) => l.map((a) => (a.id === id ? { ...a, lat, lng } : a)));
+    else this._acopios.update((l) => l.map((a) => (a.id === id ? { ...a, lat, lng } : a)));
+  }
+
+  private get<T>(url: string): Promise<T> {
+    return firstValueFrom(this.http.get<T>(url));
   }
 }

@@ -23,7 +23,9 @@ export class App {
   private readonly esNavegador = isPlatformBrowser(inject(PLATFORM_ID));
   private readonly principal = viewChild.required<ElementRef<HTMLElement>>('principal');
 
-  protected readonly resumen = inject(HumanitarianService).resumen;
+  private readonly datos = inject(HumanitarianService);
+  protected readonly resumen = this.datos.resumen;
+  protected readonly errorApi = this.datos.error;
   protected readonly menu: readonly ItemMenu[] = [
     { ruta: '/', etiqueta: 'Dashboard', icono: 'dashboard' },
     { ruta: '/donar', etiqueta: 'Donar', icono: 'heart' },
@@ -36,6 +38,7 @@ export class App {
   ];
 
   constructor() {
+    void this.datos.cargarTodo();
     let primera = true;
     this.router.events
       .pipe(filter((e) => e instanceof NavigationEnd), takeUntilDestroyed())
@@ -44,6 +47,10 @@ export class App {
         if (primera) { primera = false; return; }
         if (this.esNavegador) this.principal().nativeElement.focus({ preventScroll: true });
       });
+  }
+
+  protected reintentar(): void {
+    void this.datos.cargarTodo();
   }
 
   protected saltar(event: Event): void {

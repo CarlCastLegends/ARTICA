@@ -36,7 +36,12 @@
   </nav>
 
   <main id="contenido" #principal tabindex="-1">
+    @if (errorApi(); as e) {
+      <p class="notice notice--error" role="alert">
+        {{ e }} <button type="button" class="btn btn--ghost" (click)="reintentar()">Reintentar</button>
+      </p>
+    }
     <router-outlet />
-    <p class="footer">Prototipo con datos de ejemplo. Los registros nuevos se conservan solo mientras la página esté abierta.</p>
+    <p class="footer">Los datos se guardan en la base de datos PostgreSQL del sistema. Mapa © colaboradores de OpenStreetMap.</p>
   </main>
 </div>

@@ -1,36 +1,96 @@
 <div class="page">
-  <app-page-header titulo="Transporte" descripcion="Historial de despachos hacia las zonas afectadas, del más reciente al más antiguo." />
+  <app-page-header titulo="Transporte" descripcion="Historial de despachos hacia las zonas afectadas, del más reciente al más antiguo. Avanza el estado de cada despacho a medida que se mueve." />
 
-  <div class="row" role="group" aria-label="Filtrar por estado">
-    <button type="button" class="btn btn--ghost" [attr.aria-pressed]="filtro() === ''" (click)="filtro.set('')">Todos</button>
-    @for (e of estados; track e) {
-      <button type="button" class="btn btn--ghost" [attr.aria-pressed]="filtro() === e" (click)="filtro.set(e)">{{ e }}</button>
-    }
+  <div class="row row--between">
+    <div class="row" role="group" aria-label="Filtrar por estado">
+      <button type="button" class="btn btn--ghost" [attr.aria-pressed]="filtro() === ''" (click)="filtro.set('')">Todos</button>
+      @for (e of estados; track e) {
+        <button type="button" class="btn btn--ghost" [attr.aria-pressed]="filtro() === e" (click)="filtro.set(e)">{{ e }}</button>
+      }
+    </div>
+    <button type="button" class="btn" [attr.aria-expanded]="mostrarForm()" aria-controls="form-entrega" (click)="mostrarForm.set(!mostrarForm())">
+      {{ mostrarForm() ? 'Cerrar formulario' : 'Crear despacho' }}
+    </button>
   </div>
 
+  @if (exito()) { <p class="notice" role="status">{{ exito() }}</p> }
+  @if (errorEnvio() && !mostrarForm()) { <p class="error" role="alert">{{ errorEnvio() }}</p> }
+
+  @if (mostrarForm()) {
+    <section class="card stack" id="form-entrega" aria-labelledby="h-form-entrega">
+      <h2 id="h-form-entrega">Crear despacho</h2>
+      <form [formRoot]="f" class="form-grid">
+        <div class="field">
+          <label for="e-aco">Origen (zona de acopio)</label>
+          <select id="e-aco" class="input" [formField]="f.idAcopio" [attr.aria-describedby]="f.idAcopio().touched() && f.idAcopio().invalid() ? 'ee-aco' : null">
+            <option value="">Selecciona…</option>
+            @for (a of acopios(); track a.id) { <option [value]="'' + a.id">{{ a.titulo }}</option> }
+          </select>
+          @if (f.idAcopio().touched() && f.idAcopio().invalid()) { <p class="error" id="ee-aco">{{ f.idAcopio().errors()[0].message }}</p> }
+        </div>
+        <div class="field">
+          <label for="e-afe">Destino (zona afectada)</label>
+          <select id="e-afe" class="input" [formField]="f.idAfectado" [attr.aria-describedby]="f.idAfectado().touched() && f.idAfectado().invalid() ? 'ee-afe' : null">
+            <option value="">Selecciona…</option>
+            @for (z of afectados(); track z.id) { <option [value]="'' + z.id">{{ z.titulo }} ({{ z.zona }})</option> }
+          </select>
+          @if (f.idAfectado().touched() && f.idAfectado().invalid()) { <p class="error" id="ee-afe">{{ f.idAfectado().errors()[0].message }}</p> }
+        </div>
+        <div class="field">
+          <label for="e-veh">Vehículo</label>
+          <select id="e-veh" class="input" [formField]="f.idVehiculo" [attr.aria-describedby]="f.idVehiculo().touched() && f.idVehiculo().invalid() ? 'ee-veh' : null">
+            <option value="">Selecciona…</option>
+            @for (v of vehiculos(); track v.id) { <option [value]="'' + v.id">{{ v.nombre }} ({{ v.placa }})</option> }
+          </select>
+          @if (f.idVehiculo().touched() && f.idVehiculo().invalid()) { <p class="error" id="ee-veh">{{ f.idVehiculo().errors()[0].message }}</p> }
+        </div>
+        <div class="field">
+          <label for="e-cant">Cantidad objetivo (unidades)</label>
+          <input id="e-cant" class="input" type="number" inputmode="decimal" [formField]="f.cantidadObjetivo" [attr.aria-describedby]="f.cantidadObjetivo().touched() && f.cantidadObjetivo().invalid() ? 'ee-cant' : null" />
+          @if (f.cantidadObjetivo().touched() && f.cantidadObjetivo().invalid()) { <p class="error" id="ee-cant">{{ f.cantidadObjetivo().errors()[0].message }}</p> }
+        </div>
+        <fieldset class="full checks">
+          <legend>Carga (inventario)</legend>
+          @for (i of inventario(); track i.id) {
+            <label class="check"><input type="checkbox" [checked]="items().includes(i.id)" (change)="alternarItem(i.id, $event)" /> {{ i.nombre }}</label>
+          }
+        </fieldset>
+        @if (errorEnvio()) { <p class="error full" role="alert">{{ errorEnvio() }}</p> }
+        <div class="full"><button class="btn" type="submit">Crear despacho</button></div>
+      </form>
+    </section>
+  }
+
   <ol class="stack">
-    @for (d of despachos(); track d.id) {
-      <li class="card" [id]="d.id" [class.card--target]="seleccionado() === d.id">
+    @for (e of entregas(); track e.id) {
+      <li class="card" [id]="'ent-' + e.id" [class.card--target]="seleccionado() === 'ent-' + e.id">
         <div class="card__head">
           <div>
-            <h2>{{ d.codigo }} · {{ d.carga }}</h2>
-            <p class="meta">{{ d.cantidad | number }} {{ d.unidad }}</p>
+            <h2>{{ e.codigo }} · {{ e.cantidad | number }} unidades</h2>
+            <p class="meta">{{ e.origen }} → {{ e.destino }}</p>
           </div>
-          <app-badge [tone]="toneEstado(d.estado)">{{ d.estado }}</app-badge>
+          <span class="row">
+            @if (e.prioridad) { <app-badge [tone]="tonePrioridad(e.prioridad)">Prioridad {{ etiquetaPrioridad(e.prioridad) }}</app-badge> }
+            <app-badge [tone]="toneEstado(e.estado)">{{ e.estado }}</app-badge>
+          </span>
         </div>
         <ul class="meta-list">
-          <li><strong>Origen:</strong> <a [routerLink]="['/acopio']" [fragment]="d.origenId">{{ nombreAcopio(d.origenId) }}</a></li>
-          <li><strong>Destino:</strong> <a [routerLink]="['/zonas']" [fragment]="d.destinoId">{{ zona(d.destinoId) }}</a></li>
-          <li><strong>Vehículo:</strong> {{ d.vehiculo }} ({{ d.placa }})</li>
-          <li><strong>Conductor:</strong> {{ d.conductor }}</li>
-          <li><strong>Salida:</strong> {{ d.salida | date: 'd MMM, h:mm a' }}</li>
-          @if (d.llegada) { <li><strong>Llegada:</strong> {{ d.llegada | date: 'd MMM, h:mm a' }}</li> }
+          <li><strong>Origen:</strong> <a routerLink="/acopio" [fragment]="'aco-' + e.idAcopio">{{ e.origen }}</a></li>
+          @if (e.idAfectado) { <li><strong>Destino:</strong> <a routerLink="/zonas" [fragment]="'afe-' + e.idAfectado">{{ e.destino }}</a></li> }
+          <li><strong>Vehículo:</strong> {{ e.vehiculo ?? 'Sin asignar' }}@if (e.placa) { ({{ e.placa }}) }</li>
+          @if (e.conductor) { <li><strong>Conductor (CI):</strong> {{ e.conductor }}</li> }
+          <li><strong>Salida:</strong> {{ e.fechaSalida | date: 'd MMM, h:mm a' }}</li>
+          @if (e.fechaLlegada) { <li><strong>Llegada:</strong> {{ e.fechaLlegada | date: 'd MMM, h:mm a' }}</li> }
         </ul>
+        @if (e.carga.length) {
+          <ul class="chips"> @for (c of e.carga; track c.nombre) { <li class="chip">{{ c.nombre }}</li> } </ul>
+        }
         <ol class="steps" aria-label="Progreso del despacho">
-          @for (e of estados; track e) {
-            <li [class.done]="alcanzado(d.estado, e)">{{ e }}</li>
-          }
+          @for (p of estados; track p) { <li [class.done]="alcanzado(e.estado, p)">{{ p }}</li> }
         </ol>
+        @if (siguiente(e.estado); as sig) {
+          <p><button type="button" class="btn btn--ghost" [disabled]="ocupado() === e.id" (click)="avanzar(e.id, e.estado)">Marcar como «{{ sig }}»</button></p>
+        }
       </li>
     } @empty {
       <li class="notice notice--info">No hay despachos con ese estado.</li>
