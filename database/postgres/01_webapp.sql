@@ -1,3 +1,4 @@
+-- ARTICA · base PostgreSQL «webapp» (convertida de tu respaldo; datos como INSERT para cargarla desde cualquier cliente).
 CREATE SCHEMA entrega;
 CREATE SCHEMA institutos;
 CREATE SCHEMA personas;
@@ -238,95 +239,51 @@ ALTER TABLE ONLY zona.acopio ALTER COLUMN id_acopio SET DEFAULT nextval('zona.ac
 ALTER TABLE ONLY zona.afectado ALTER COLUMN id SET DEFAULT nextval('zona.afectado_id_seq'::regclass);
 ALTER TABLE ONLY zona.prioridad ALTER COLUMN id_prioridad SET DEFAULT nextval('zona.prioridad_id_prioridad_seq'::regclass);
 ALTER TABLE ONLY zona.voluntario ALTER COLUMN id_voluntario SET DEFAULT nextval('zona.voluntario_id_voluntario_seq'::regclass);
-COPY entrega.entrega (id_entrega, codigo, destino, origen, id_vehiculo, id_acopio, id_afectado, cantidad_objetivo, id_inventario, id_prioridad) FROM stdin;
-1	ENT-001	Petare	Acopio Central Petare	1	1	1	200.00	{1,2}	3
-2	ENT-002	Catia	Acopio Catia	2	2	2	150.00	{4,5}	2
-3	ENT-003	El Valle	Acopio El Valle	3	3	3	100.00	{6}	3
-4	ENT-004	La Vega	Acopio La Vega	1	4	4	50.00	{1}	1
-\.
-
-
-COPY entrega.vehiculo (id_vehiculo, id_conductor, nombre, placa) FROM stdin;
-1	V-12345678	Camión Ford	A1B2C3
-2	V-23456789	Camioneta Toyota	X9Y8Z7
-3	V-34567890	Furgón Chevrolet	M4N5O6
-\.
-
-
-COPY institutos.organizacion (id, nombre, tipo, rif) FROM stdin;
-1	Cruz Roja Venezuela	ONG	J-12345678-9
-2	Empresa Polar	empresa	J-98765432-1
-3	Instituto Pedagógico	instituto	J-55555555-5
-4	Consejo Comunal Petare	comunidad	J-66666666-6
-\.
-
-
-COPY personas.donador (id, nombre, correo, recurso_donado, dinero_donado, estado, pais, id_acopio_donado) FROM stdin;
-1	Juan Donante	juan@mail.com	{"Agua potable",Alimentos}	100.00	activo	Venezuela	1
-2	Empresa XYZ	xyz@mail.com	{Ropa}	500.00	activo	Colombia	2
-3	María Solidaria	maria@mail.com	{Cobijas/Colchonetas}	0.00	pendiente	Ecuador	3
-4	Fundación Ayuda	ayuda@mail.com	\N	1000.00	activo	Panamá	1
-5	Pedro Anónimo	\N	{Otro}	25.00	inactivo	Otro	4
-\.
-
-
-COPY personas.registrados (id, nombre_completo, cedula, foto, estado_persona, id_zona) FROM stdin;
-\.
-
-
-COPY personas.usuario (id, nombre, correo, id_organizacion) FROM stdin;
-1	Admin Cruz Roja	admin@cruzroja.org	1
-2	Contacto Polar	contacto@polar.com	2
-3	Coordinador IP	coord@ip.edu	3
-4	Vocero Comunal	vocero@petare.org	4
-5	Usuario Independiente	indep@correo.com	\N
-\.
-
-
-COPY recursos.inventario (id_inventario, tipo, cantidad, nombre) FROM stdin;
-1	Agua potable	500.00	Botellones 5L
-2	Alimentos	300.00	Cajas de comida no perecedera
-3	Ropa	800.00	Ropa de abrigo
-4	Cobijas/Colchonetas	250.00	Cobijas térmicas
-5	Higiene personal	400.00	Kits de higiene
-6	primeros auxilios	150.00	Botiquines básicos
-7	Herramientas	80.00	Palas y picos
-8	Bolsas de basura	1000.00	Bolsas resistentes
-9	Otro	60.00	Linternas
-\.
-
-
-COPY zona.acopio (id_acopio, titulo, zona, foto, recursos_comunes, capacidad, enlace_maps, id_inventario, id_responsable) FROM stdin;
-1	Acopio Central Petare	Petare	\N	{"Agua potable",Alimentos,Ropa}	alto	https://maps.app.goo.gl/acp1	1	1
-2	Acopio Catia	Catia	\N	{Cobijas/Colchonetas,"Higiene personal"}	intermedio	https://maps.app.goo.gl/acp2	4	2
-3	Acopio El Valle	El Valle	\N	{Alimentos,"primeros auxilios"}	pocos	https://maps.app.goo.gl/acp3	6	3
-4	Acopio La Vega	La Vega	\N	{"Agua potable"}	sin insumos	https://maps.app.goo.gl/acp4	1	4
-\.
-
-
-COPY zona.afectado (id, titulo, zona, foto, prioridad, poblacion_riesgo, enlace_maps, id_prioridad) FROM stdin;
-1	Derrumbe sector norte	Petare	\N	alto	850	https://maps.app.goo.gl/abc1	3
-2	Inundación barrio sur	Catia	\N	medio	320	https://maps.app.goo.gl/abc2	2
-3	Deslizamiento cerro	El Valle	\N	alto	1200	https://maps.app.goo.gl/abc3	3
-4	Falta de agua	La Vega	\N	bajo	150	https://maps.app.goo.gl/abc4	1
-\.
-
-
-COPY zona.prioridad (id_prioridad, nivel) FROM stdin;
-1	bajo
-2	medio
-3	alto
-\.
-
-
-COPY zona.voluntario (id_voluntario, nombre_completo, cedula, id_acopio) FROM stdin;
-1	Ana Pérez	V-12345678	1
-2	Luis Gómez	V-23456789	2
-3	María Rodríguez	V-34567890	3
-4	Carlos Díaz	V-45678901	4
-\.
-
-
+INSERT INTO entrega.entrega (id_entrega, codigo, destino, origen, id_vehiculo, id_acopio, id_afectado, cantidad_objetivo, id_inventario, id_prioridad) VALUES ('1', 'ENT-001', 'Petare', 'Acopio Central Petare', '1', '1', '1', '200.00', '{1,2}', '3');
+INSERT INTO entrega.entrega (id_entrega, codigo, destino, origen, id_vehiculo, id_acopio, id_afectado, cantidad_objetivo, id_inventario, id_prioridad) VALUES ('2', 'ENT-002', 'Catia', 'Acopio Catia', '2', '2', '2', '150.00', '{4,5}', '2');
+INSERT INTO entrega.entrega (id_entrega, codigo, destino, origen, id_vehiculo, id_acopio, id_afectado, cantidad_objetivo, id_inventario, id_prioridad) VALUES ('3', 'ENT-003', 'El Valle', 'Acopio El Valle', '3', '3', '3', '100.00', '{6}', '3');
+INSERT INTO entrega.entrega (id_entrega, codigo, destino, origen, id_vehiculo, id_acopio, id_afectado, cantidad_objetivo, id_inventario, id_prioridad) VALUES ('4', 'ENT-004', 'La Vega', 'Acopio La Vega', '1', '4', '4', '50.00', '{1}', '1');
+INSERT INTO entrega.vehiculo (id_vehiculo, id_conductor, nombre, placa) VALUES ('1', 'V-12345678', 'Camión Ford', 'A1B2C3');
+INSERT INTO entrega.vehiculo (id_vehiculo, id_conductor, nombre, placa) VALUES ('2', 'V-23456789', 'Camioneta Toyota', 'X9Y8Z7');
+INSERT INTO entrega.vehiculo (id_vehiculo, id_conductor, nombre, placa) VALUES ('3', 'V-34567890', 'Furgón Chevrolet', 'M4N5O6');
+INSERT INTO institutos.organizacion (id, nombre, tipo, rif) VALUES ('1', 'Cruz Roja Venezuela', 'ONG', 'J-12345678-9');
+INSERT INTO institutos.organizacion (id, nombre, tipo, rif) VALUES ('2', 'Empresa Polar', 'empresa', 'J-98765432-1');
+INSERT INTO institutos.organizacion (id, nombre, tipo, rif) VALUES ('3', 'Instituto Pedagógico', 'instituto', 'J-55555555-5');
+INSERT INTO institutos.organizacion (id, nombre, tipo, rif) VALUES ('4', 'Consejo Comunal Petare', 'comunidad', 'J-66666666-6');
+INSERT INTO personas.donador (id, nombre, correo, recurso_donado, dinero_donado, estado, pais, id_acopio_donado) VALUES ('1', 'Juan Donante', 'juan@mail.com', '{"Agua potable",Alimentos}', '100.00', 'activo', 'Venezuela', '1');
+INSERT INTO personas.donador (id, nombre, correo, recurso_donado, dinero_donado, estado, pais, id_acopio_donado) VALUES ('2', 'Empresa XYZ', 'xyz@mail.com', '{Ropa}', '500.00', 'activo', 'Colombia', '2');
+INSERT INTO personas.donador (id, nombre, correo, recurso_donado, dinero_donado, estado, pais, id_acopio_donado) VALUES ('3', 'María Solidaria', 'maria@mail.com', '{Cobijas/Colchonetas}', '0.00', 'pendiente', 'Ecuador', '3');
+INSERT INTO personas.donador (id, nombre, correo, recurso_donado, dinero_donado, estado, pais, id_acopio_donado) VALUES ('4', 'Fundación Ayuda', 'ayuda@mail.com', NULL, '1000.00', 'activo', 'Panamá', '1');
+INSERT INTO personas.donador (id, nombre, correo, recurso_donado, dinero_donado, estado, pais, id_acopio_donado) VALUES ('5', 'Pedro Anónimo', NULL, '{Otro}', '25.00', 'inactivo', 'Otro', '4');
+INSERT INTO personas.usuario (id, nombre, correo, id_organizacion) VALUES ('1', 'Admin Cruz Roja', 'admin@cruzroja.org', '1');
+INSERT INTO personas.usuario (id, nombre, correo, id_organizacion) VALUES ('2', 'Contacto Polar', 'contacto@polar.com', '2');
+INSERT INTO personas.usuario (id, nombre, correo, id_organizacion) VALUES ('3', 'Coordinador IP', 'coord@ip.edu', '3');
+INSERT INTO personas.usuario (id, nombre, correo, id_organizacion) VALUES ('4', 'Vocero Comunal', 'vocero@petare.org', '4');
+INSERT INTO personas.usuario (id, nombre, correo, id_organizacion) VALUES ('5', 'Usuario Independiente', 'indep@correo.com', NULL);
+INSERT INTO recursos.inventario (id_inventario, tipo, cantidad, nombre) VALUES ('1', 'Agua potable', '500.00', 'Botellones 5L');
+INSERT INTO recursos.inventario (id_inventario, tipo, cantidad, nombre) VALUES ('2', 'Alimentos', '300.00', 'Cajas de comida no perecedera');
+INSERT INTO recursos.inventario (id_inventario, tipo, cantidad, nombre) VALUES ('3', 'Ropa', '800.00', 'Ropa de abrigo');
+INSERT INTO recursos.inventario (id_inventario, tipo, cantidad, nombre) VALUES ('4', 'Cobijas/Colchonetas', '250.00', 'Cobijas térmicas');
+INSERT INTO recursos.inventario (id_inventario, tipo, cantidad, nombre) VALUES ('5', 'Higiene personal', '400.00', 'Kits de higiene');
+INSERT INTO recursos.inventario (id_inventario, tipo, cantidad, nombre) VALUES ('6', 'primeros auxilios', '150.00', 'Botiquines básicos');
+INSERT INTO recursos.inventario (id_inventario, tipo, cantidad, nombre) VALUES ('7', 'Herramientas', '80.00', 'Palas y picos');
+INSERT INTO recursos.inventario (id_inventario, tipo, cantidad, nombre) VALUES ('8', 'Bolsas de basura', '1000.00', 'Bolsas resistentes');
+INSERT INTO recursos.inventario (id_inventario, tipo, cantidad, nombre) VALUES ('9', 'Otro', '60.00', 'Linternas');
+INSERT INTO zona.acopio (id_acopio, titulo, zona, foto, recursos_comunes, capacidad, enlace_maps, id_inventario, id_responsable) VALUES ('1', 'Acopio Central Petare', 'Petare', NULL, '{"Agua potable",Alimentos,Ropa}', 'alto', 'https://maps.app.goo.gl/acp1', '1', '1');
+INSERT INTO zona.acopio (id_acopio, titulo, zona, foto, recursos_comunes, capacidad, enlace_maps, id_inventario, id_responsable) VALUES ('2', 'Acopio Catia', 'Catia', NULL, '{Cobijas/Colchonetas,"Higiene personal"}', 'intermedio', 'https://maps.app.goo.gl/acp2', '4', '2');
+INSERT INTO zona.acopio (id_acopio, titulo, zona, foto, recursos_comunes, capacidad, enlace_maps, id_inventario, id_responsable) VALUES ('3', 'Acopio El Valle', 'El Valle', NULL, '{Alimentos,"primeros auxilios"}', 'pocos', 'https://maps.app.goo.gl/acp3', '6', '3');
+INSERT INTO zona.acopio (id_acopio, titulo, zona, foto, recursos_comunes, capacidad, enlace_maps, id_inventario, id_responsable) VALUES ('4', 'Acopio La Vega', 'La Vega', NULL, '{"Agua potable"}', 'sin insumos', 'https://maps.app.goo.gl/acp4', '1', '4');
+INSERT INTO zona.afectado (id, titulo, zona, foto, prioridad, poblacion_riesgo, enlace_maps, id_prioridad) VALUES ('1', 'Derrumbe sector norte', 'Petare', NULL, 'alto', '850', 'https://maps.app.goo.gl/abc1', '3');
+INSERT INTO zona.afectado (id, titulo, zona, foto, prioridad, poblacion_riesgo, enlace_maps, id_prioridad) VALUES ('2', 'Inundación barrio sur', 'Catia', NULL, 'medio', '320', 'https://maps.app.goo.gl/abc2', '2');
+INSERT INTO zona.afectado (id, titulo, zona, foto, prioridad, poblacion_riesgo, enlace_maps, id_prioridad) VALUES ('3', 'Deslizamiento cerro', 'El Valle', NULL, 'alto', '1200', 'https://maps.app.goo.gl/abc3', '3');
+INSERT INTO zona.afectado (id, titulo, zona, foto, prioridad, poblacion_riesgo, enlace_maps, id_prioridad) VALUES ('4', 'Falta de agua', 'La Vega', NULL, 'bajo', '150', 'https://maps.app.goo.gl/abc4', '1');
+INSERT INTO zona.prioridad (id_prioridad, nivel) VALUES ('1', 'bajo');
+INSERT INTO zona.prioridad (id_prioridad, nivel) VALUES ('2', 'medio');
+INSERT INTO zona.prioridad (id_prioridad, nivel) VALUES ('3', 'alto');
+INSERT INTO zona.voluntario (id_voluntario, nombre_completo, cedula, id_acopio) VALUES ('1', 'Ana Pérez', 'V-12345678', '1');
+INSERT INTO zona.voluntario (id_voluntario, nombre_completo, cedula, id_acopio) VALUES ('2', 'Luis Gómez', 'V-23456789', '2');
+INSERT INTO zona.voluntario (id_voluntario, nombre_completo, cedula, id_acopio) VALUES ('3', 'María Rodríguez', 'V-34567890', '3');
+INSERT INTO zona.voluntario (id_voluntario, nombre_completo, cedula, id_acopio) VALUES ('4', 'Carlos Díaz', 'V-45678901', '4');
 SELECT pg_catalog.setval('entrega.entrega_id_entrega_seq', 4, true);
 SELECT pg_catalog.setval('entrega.vehiculo_id_vehiculo_seq', 3, true);
 SELECT pg_catalog.setval('institutos.organizacion_id_seq', 4, true);

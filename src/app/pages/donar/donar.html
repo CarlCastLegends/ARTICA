@@ -28,10 +28,14 @@
         </div>
         <div class="field">
           <label for="d-acopio">Punto de acopio</label>
-          <select id="d-acopio" class="input" [formField]="f.idAcopio" [attr.aria-describedby]="f.idAcopio().touched() && f.idAcopio().invalid() ? 'e-acopio' : null">
-            <option value="">Selecciona un punto…</option>
-            @for (a of acopios(); track a.id) { <option [value]="'' + a.id">{{ a.titulo }} ({{ a.zona }})</option> }
-          </select>
+          @if (acopios().length) {
+            <select id="d-acopio" class="input" [formField]="f.idAcopio" [attr.aria-describedby]="f.idAcopio().touched() && f.idAcopio().invalid() ? 'e-acopio' : null">
+              <option value="">Selecciona un punto…</option>
+              @for (a of acopios(); track a.id) { <option [value]="'' + a.id">{{ a.titulo }} ({{ a.zona }})</option> }
+            </select>
+          } @else {
+            <p class="meta" role="status">Cargando puntos de acopio…</p>
+          }
           @if (f.idAcopio().touched() && f.idAcopio().invalid()) { <p class="error" id="e-acopio">{{ f.idAcopio().errors()[0].message }}</p> }
         </div>
         <fieldset class="full checks">
@@ -87,10 +91,14 @@
         </div>
         <div class="field full">
           <label for="v-acopio">Punto de acopio</label>
-          <select id="v-acopio" class="input" [formField]="v.idAcopio" [attr.aria-describedby]="v.idAcopio().touched() && v.idAcopio().invalid() ? 'ev-acopio' : null">
-            <option value="">Selecciona un punto…</option>
-            @for (a of acopios(); track a.id) { <option [value]="'' + a.id">{{ a.titulo }} ({{ a.zona }})</option> }
-          </select>
+          @if (acopios().length) {
+            <select id="v-acopio" class="input" [formField]="v.idAcopio" [attr.aria-describedby]="v.idAcopio().touched() && v.idAcopio().invalid() ? 'ev-acopio' : null">
+              <option value="">Selecciona un punto…</option>
+              @for (a of acopios(); track a.id) { <option [value]="'' + a.id">{{ a.titulo }} ({{ a.zona }})</option> }
+            </select>
+          } @else {
+            <p class="meta" role="status">Cargando puntos de acopio…</p>
+          }
           @if (v.idAcopio().touched() && v.idAcopio().invalid()) { <p class="error" id="ev-acopio">{{ v.idAcopio().errors()[0].message }}</p> }
         </div>
         @if (errorVoluntario()) { <p class="error full" role="alert">{{ errorVoluntario() }}</p> }

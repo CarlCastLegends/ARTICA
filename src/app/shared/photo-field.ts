@@ -28,9 +28,9 @@ let contador = 0;
         }
         @case ('archivo') {
           <div class="field">
-            <label [for]="grupo + '-file'">Archivo .png, .jpg o .jpeg (máx. 5 MB)</label>
+            <label [for]="grupo + '-file'">Archivo .png, .jpg o .jpeg (máx. 4 MB)</label>
             <input [id]="grupo + '-file'" class="input" type="file" accept=".png,.jpg,.jpeg,image/png,image/jpeg" (change)="elegirArchivo($event)" />
-            <p class="meta">Se guardará en la carpeta <code>/img/{{ carpeta() }}/</code> del servidor.</p>
+            <p class="meta">Se guardará en la carpeta <code>{{ carpeta() }}</code> del almacenamiento de fotos.</p>
           </div>
         }
         @default {

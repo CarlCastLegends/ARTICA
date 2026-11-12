@@ -3,11 +3,12 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "concurrently -k -n api,web -c blue,green \"npm:api\" \"ng serve\"",
+    "api": "tsx watch --tsconfig api/tsconfig.json server/dev.ts",
     "build": "ng build",
+    "db:init": "node scripts/init-db.mjs",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test",
-    "serve:ssr:artica": "node dist/artica/server/server.mjs"
+    "test": "ng test"
   },
   "private": true,
   "packageManager": "npm@10.9.8",
@@ -17,12 +18,12 @@
     "@angular/core": "^22.2.0",
     "@angular/forms": "^22.2.0",
     "@angular/platform-browser": "^22.2.0",
-    "@angular/platform-server": "^22.2.0",
     "@angular/router": "^22.2.0",
-    "@angular/ssr": "^22.2.5",
+    "@vercel/blob": "^2.9.0",
     "express": "^5.1.0",
     "leaflet": "^1.9.4",
     "multer": "^2.5.0",
+    "pg": "^8.23.1",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
@@ -34,8 +35,11 @@
     "@types/leaflet": "^1.9.22",
     "@types/multer": "^2.3.0",
     "@types/node": "^22.12.0",
+    "@types/pg": "^8.23.1",
+    "concurrently": "^10.0.7",
     "jsdom": "^30.0.0",
     "prettier": "^3.8.1",
+    "tsx": "^4.23.15",
     "typescript": "~6.0.2",
     "vitest": "^5.0.0"
   }

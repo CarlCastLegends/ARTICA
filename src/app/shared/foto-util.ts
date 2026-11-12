@@ -8,7 +8,7 @@ export interface FotoValor {
 
 export const FOTO_VACIA: FotoValor = { modo: 'ninguna', enlace: '', archivo: null };
 export const TIPOS_FOTO = ['image/png', 'image/jpeg'];
-export const MAX_FOTO = 5 * 1024 * 1024;
+export const MAX_FOTO = 4 * 1024 * 1024;
 
 /** Devuelve un mensaje si la foto elegida no es válida; `null` si está bien (o si no hay foto). */
 export function errorFoto(f: FotoValor): string | null {
@@ -22,7 +22,7 @@ export function errorFoto(f: FotoValor): string | null {
   }
   if (f.modo === 'archivo' && f.archivo) {
     if (!TIPOS_FOTO.includes(f.archivo.type)) return 'Solo se aceptan imágenes .png, .jpg o .jpeg.';
-    if (f.archivo.size > MAX_FOTO) return 'La foto no puede superar los 5 MB.';
+    if (f.archivo.size > MAX_FOTO) return 'La foto no puede superar los 4 MB.';
   }
   return null;
 }

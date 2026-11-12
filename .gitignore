@@ -48,5 +48,3 @@ Thumbs.db
 /img/aco/*
 !/img/*/.gitkeep
 
-/data/*.db
-/data/*.db-*

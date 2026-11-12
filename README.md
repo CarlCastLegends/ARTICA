@@ -1,62 +1,67 @@
-# Artica
-<img src="src/img/logo.jpg" alt="Logo del proyecto" width="300">
+# ARTICA · Logística humanitaria y trazabilidad de donaciones
 
-A web system for the, logistics traceability of donations and distributed humanitarian aid to contingencies and regional social in Venezuela is presented. The proposal is fundamental in initiatives of digital humanitarian response platform and social management to the national context, inspired by models in the models and background of SOS Yummy and the work of Arenas E.R with Donavenezuela.com. An environmentally-applied approach is based on the laudable Scrum methodology, a fragmented and modular development by components. The architecture of the system is with Coruña as Angular for the frontend and Visual Studio Code, complete the development cycle in less in a month. The application of a web platform to carry out the real-time tracking of collection centers (available inventory and personal areas), conditions and the logistics of input transport. For the integration of Map APIs (Google Maps / OpenStreetMap), the personar platform geo-reference the origin, route on the way and destination destination of the Congresses, master the traceability and the importance of donations.
+Angular 22 + TypeScript + CSS (página estática) · API en **funciones de Vercel** (Express) ·
+base de datos **PostgreSQL en la nube (Neon o Supabase)** · fotos en **Vercel Blob** · mapa de **OpenStreetMap**.
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.2.5.
-
-## Development server
-
-To start a local development server, run:
-
-```bash
-ng serve
+```
+src/app/      aplicación Angular (8 secciones)
+api/          función de Vercel (todas las rutas /api/*)
+server/       la API: rutas, base de datos y almacenamiento de fotos
+database/postgres/   01_webapp.sql (tu base original) y 02_extensiones.sql
+scripts/init-db.mjs  crea las tablas y datos iniciales en tu base
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## 1. Base de datos (una sola vez)
 
-## Code scaffolding
+1. Crea una base PostgreSQL gratuita: en tu proyecto de Vercel → **Storage → Create → Neon** (o usa Supabase).
+2. Copia su cadena de conexión (la variable `DATABASE_URL`; en Neon usa la «pooled connection»).
+3. En tu computador: `cp .env.example .env` y pega la cadena en `DATABASE_URL`.
+4. Crea las tablas y los datos iniciales:
+   ```bash
+   npm install
+   npm run db:init
+   ```
+   Es seguro repetirlo: si las tablas ya existen no toca tus datos.
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
+## 2. Trabajar en local
 
 ```bash
-ng build
+npm start      # Angular en http://localhost:4200 + API en http://localhost:3000
 ```
+Usa la misma base de la nube (no hay nada que instalar). Sin `BLOB_READ_WRITE_TOKEN`, las fotos subidas se guardan
+en `img/reg`, `img/afe` e `img/aco` de tu computador.
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+## 3. Publicar en Vercel
 
-## Running unit tests
+1. Sube el proyecto a GitHub (la carpeta `node_modules`, `.env` y las fotos locales ya están en `.gitignore`).
+2. En Vercel: **Add New → Project →** tu repositorio. Si te pide *Framework Preset*, elige **Other**
+   (`vercel.json` ya define el comando de compilación y la carpeta de salida).
+3. **Settings → Environment Variables:** añade `DATABASE_URL` (si usaste la integración de Neon, ya viene creada).
+4. **Storage → Create → Blob**, conéctalo al proyecto: Vercel crea solo `BLOB_READ_WRITE_TOKEN`.
+5. **Deployments → Redeploy.** Comprueba `https://tu-sitio.vercel.app/api/health` → debe responder `{"ok":true}`.
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+## Fotos
 
-```bash
-ng test
-```
+Cada formulario (zonas afectadas, zonas de acopio, personas) pide una foto **opcional**: sin foto (se usa un enlace gris),
+**enlace**, o **archivo** `.png` / `.jpg` / `.jpeg` (máx. **4 MB**, límite de Vercel). Los archivos se guardan separados por tabla:
 
-## Running end-to-end tests
+| Tabla | Carpeta |
+|---|---|
+| `personas.registrados` | `reg/` |
+| `zona.afectado` | `afe/` |
+| `zona.acopio` | `aco/` |
 
-For end-to-end (e2e) testing, run:
+En Vercel Blob son carpetas dentro del almacenamiento (`reg/…`, `afe/…`, `aco/…`) y en la base queda la dirección pública.
+Cada tarjeta permite **cambiar la foto** (la anterior se borra si era un archivo propio).
 
-```bash
-ng e2e
-```
+## Mapa
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+Mosaicos de `tile.openstreetmap.org`. Las zonas sin coordenadas se ubican con la búsqueda de OpenStreetMap (Nominatim,
+1 consulta por segundo) y las coordenadas se guardan en la base. Los despachos no entregados se dibujan como línea
+entre el acopio y la zona afectada.
 
-## Additional Resources
+## Antes de publicar de verdad
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+- La API **no tiene autenticación**: cualquiera puede crear registros. Añade inicio de sesión.
+- Reemplaza los datos de contacto en `src/app/pages/nosotros/nosotros.ts`.
+- Cambia `placehold.co` por tus propias imágenes grises si no quieres depender de un servicio externo.
