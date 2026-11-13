@@ -3,11 +3,30 @@ import { Service, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { Acopio, Afectado, Catalogos, Donador, Entrega, EstadoTransporte, Registrado, TablaFoto } from './models';
 
+/** Texto corto y legible a partir de lo que respondió el servidor. */
 export function mensajeError(err: unknown): string {
   if (err instanceof HttpErrorResponse) {
-    const cuerpo = err.error as { error?: unknown } | null;
-    if (cuerpo && typeof cuerpo.error === 'string') return cuerpo.error;
-    if (err.status === 0) return 'No hay conexión con el servidor.';
+    const cuerpo = err.error as { error?: unknown; text?: unknown } | string | null;
+    if (cuerpo && typeof cuerpo === 'object' && typeof cuerpo.error === 'string') return cuerpo.error;
+
+    let ruta = 'la API';
+    try {
+      if (err.url) ruta = new URL(err.url).pathname;
+    } catch {
+      ruta = err.url ?? 'la API';
+    }
+    if (err.status === 0) {
+      return 'No hay conexión con el servidor. En local, ¿está en marcha «npm start»? En internet, revisa tu conexión.';
+    }
+    // 200 pero no es JSON: casi siempre es la página del sitio devuelta en lugar de la API.
+    if (err.status === 200) {
+      return `La dirección ${ruta} devolvió una página web en lugar de datos: la API no está desplegada en este sitio (¿falta la carpeta api/ en Vercel?).`;
+    }
+    if (err.status === 404) {
+      return `La API no existe en ${ruta} (error 404). En Vercel significa que la función de la carpeta api/ no se desplegó.`;
+    }
+    const texto = typeof cuerpo === 'string' ? cuerpo.replace(/\s+/g, ' ').trim().slice(0, 140) : '';
+    return `El servidor respondió con el error ${err.status} en ${ruta}${texto ? `: ${texto}` : ''}.`;
   }
   return 'Ocurrió un error inesperado. Inténtalo de nuevo.';
 }
@@ -81,7 +100,7 @@ export class HumanitarianService {
       this._donadores.set(donadores);
       this._catalogos.set(catalogos);
     } catch (err) {
-      this.error.set(`${mensajeError(err)} Revisa que la API y la base de datos estén en marcha.`);
+      this.error.set(mensajeError(err));
     } finally {
       this.cargando.set(false);
     }
