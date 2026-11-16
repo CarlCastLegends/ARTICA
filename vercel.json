@@ -5,9 +5,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist/artica/browser",
   "rewrites": [
-    {
-      "source": "/((?!api/).*)",
-      "destination": "/index.html"
-    }
+    { "source": "/api/((?!index$).*)", "destination": "/api/index?__ruta=$1" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

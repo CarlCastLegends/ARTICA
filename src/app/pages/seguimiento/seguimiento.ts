@@ -53,6 +53,7 @@ export class Seguimiento {
   protected readonly etiqueta = (t: TipoPunto): string => ETIQUETAS[t];
   protected readonly ubicando = signal(0);
   protected readonly sinUbicar = signal<readonly string[]>([]);
+  protected readonly sinGuardar = signal(0);
   protected readonly mapaListo = signal(false);
   protected readonly errorMapa = signal<string | null>(null);
 
@@ -62,16 +63,19 @@ export class Seguimiento {
   private readonly marcadores = new Map<string, Marker>();
   private primeraVez = true;
   private readonly cacheGeo = new Map<string, Coordenadas | null>();
+  /** Coordenadas obtenidas de OpenStreetMap: se muestran de inmediato, aunque aún no estén guardadas en la base. */
+  private readonly ubicadas = signal<ReadonlyMap<string, Coordenadas>>(new Map());
+  private readonly intentados = new Set<string>();
 
   /** Coordenadas conocidas: de la base de datos o de un enlace con `@lat,lng`. */
-  private coordsDe(lat: number | null, lng: number | null, enlace: string): Coordenadas | null {
+  private coordsDe(clave: string, lat: number | null, lng: number | null, enlace: string): Coordenadas | null {
     if (lat !== null && lng !== null) return { lat, lng };
-    return coordenadasDeEnlace(enlace);
+    return coordenadasDeEnlace(enlace) ?? this.ubicadas().get(clave) ?? null;
   }
 
   private readonly base = computed(() => {
-    const afectados = this.datos.afectados().map((a) => ({ a, pos: this.coordsDe(a.lat, a.lng, a.enlaceMaps) }));
-    const acopios = this.datos.acopios().map((a) => ({ a, pos: this.coordsDe(a.lat, a.lng, a.enlaceMaps) }));
+    const afectados = this.datos.afectados().map((a) => ({ a, pos: this.coordsDe(`afe-${a.id}`, a.lat, a.lng, a.enlaceMaps) }));
+    const acopios = this.datos.acopios().map((a) => ({ a, pos: this.coordsDe(`aco-${a.id}`, a.lat, a.lng, a.enlaceMaps) }));
     return { afectados, acopios };
   });
 
@@ -166,7 +170,8 @@ export class Seguimiento {
         ...afectados.filter((x) => !x.pos).map((x) => ({ tabla: 'afe' as const, id: x.a.id, lugar: x.a.zona ?? x.a.titulo })),
         ...acopios.filter((x) => !x.pos).map((x) => ({ tabla: 'aco' as const, id: x.a.id, lugar: x.a.zona ?? x.a.titulo })),
       ];
-      if (pendientes.length && !this.geocodificando) void this.ubicarPendientes(pendientes);
+      const nuevos = pendientes.filter((p) => !this.intentados.has(`${p.tabla}-${p.id}`));
+      if (nuevos.length && !this.geocodificando) void this.ubicarPendientes(nuevos);
     });
   }
 
@@ -177,14 +182,26 @@ export class Seguimiento {
     this.ubicando.set(lista.length);
     const fallidos: string[] = [];
     for (const item of lista) {
+      const clave = `${item.tabla}-${item.id}`;
+      this.intentados.add(clave);
       try {
         if (!this.cacheGeo.has(item.lugar)) {
           this.cacheGeo.set(item.lugar, await geocodificar(item.lugar));
           await esperar(1100); // política de uso de Nominatim: 1 petición por segundo
         }
         const pos = this.cacheGeo.get(item.lugar);
-        if (pos) await this.datos.guardarUbicacion(item.tabla, item.id, pos.lat, pos.lng);
-        else fallidos.push(item.lugar);
+        if (!pos) {
+          fallidos.push(item.lugar);
+        } else {
+          // Se muestra ya en el mapa...
+          this.ubicadas.update((m) => new Map(m).set(clave, pos));
+          // ...y se intenta guardar en la base de datos para la próxima vez.
+          try {
+            await this.datos.guardarUbicacion(item.tabla, item.id, pos.lat, pos.lng);
+          } catch {
+            this.sinGuardar.update((n) => n + 1);
+          }
+        }
       } catch {
         fallidos.push(item.lugar);
       }

@@ -23,7 +23,7 @@ export function mensajeError(err: unknown): string {
       return `La dirección ${ruta} devolvió una página web en lugar de datos: la API no está desplegada en este sitio (¿falta la carpeta api/ en Vercel?).`;
     }
     if (err.status === 404) {
-      return `La API no existe en ${ruta} (error 404). En Vercel significa que la función de la carpeta api/ no se desplegó.`;
+      return `La ruta ${ruta} no existe en la API (error 404). Si acabas de actualizar el proyecto, espera a que Vercel termine de publicar y recarga con Ctrl+F5.`;
     }
     const texto = typeof cuerpo === 'string' ? cuerpo.replace(/\s+/g, ' ').trim().slice(0, 140) : '';
     return `El servidor respondió con el error ${err.status} en ${ruta}${texto ? `: ${texto}` : ''}.`;

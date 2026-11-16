@@ -14,6 +14,9 @@
   @if (sinUbicar().length) {
     <p class="notice notice--info" role="status">No se pudo ubicar: {{ sinUbicar().join(', ') }}. Agrega un enlace de mapa con coordenadas a esos registros.</p>
   }
+  @if (sinGuardar() > 0) {
+    <p class="notice notice--info" role="status">Se ubicaron {{ sinGuardar() }} zonas en el mapa, pero no se pudieron guardar las coordenadas en la base de datos; se volverán a calcular la próxima vez.</p>
+  }
   @if (errorMapa()) { <p class="error" role="alert">{{ errorMapa() }}</p> }
 
   <div class="mapa-layout">
